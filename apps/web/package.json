@@ -1,0 +1,34 @@
+{
+  "name": "@caprail/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@caprail/chain": "workspace:^",
+    "@caprail/shared": "workspace:^",
+    "@solana/wallet-adapter-base": "0.9.28",
+    "@solana/wallet-adapter-react": "0.15.40",
+    "@solana/wallet-adapter-react-ui": "0.9.40",
+    "@solana/web3.js": "1.99.0",
+    "@tanstack/react-query": "5.102.8",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "zod": "4.6.2"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "4.7.0",
+    "autoprefixer": "10.6.0",
+    "postcss": "8.5.28",
+    "tailwindcss": "3.4.19",
+    "vite": "5.4.21"
+  }
+}

@@ -1,0 +1,63 @@
+[package]
+name = "caprail"
+description = "Cap table on Solana: admission, vesting and ROFR enforced by the token itself (Token-2022 transfer hook)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# `cdylib` — те, що їде в мережу; `lib` потрібен, щоб крейт було видно з тестів
+# (mollusk) тим самим кодом, а не копією розкладки акаунтів.
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "caprail"
+
+# Набір фіч — стандартний для Anchor і не косметичний:
+# `no-entrypoint` вимикає точку входу BPF, коли крейт лінкується як бібліотека;
+# `idl-build` вмикає `anchor build --features idl-build`, яким CLI дістає IDL.
+#
+# `custom-heap`, `custom-panic` і `anchor-debug` ми не вмикаємо, але оголосити їх
+# доводиться: макрос `#[program]` розгортається у `cfg(feature = "...")` на них,
+# а нерозпізнаний cfg — попередження, яке під `-D warnings` зупиняє гейт.
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+custom-heap = []
+custom-panic = []
+anchor-debug = []
+
+# Те саме для `cfg(target_os = "solana")`: хостовий rustc такої платформи не
+# знає, а Anchor у неї розгортається.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
+
+[dependencies]
+# `init-if-needed` — для казначейського ATA компанії: ATA для чужого власника
+# може створити будь-хто, і з голим `init` стороння людина заблокувала б
+# `create_token` назавжди, створивши акаунт наперед.
+anchor-lang = { workspace = true, features = ["init-if-needed"] }
+# `token_interface` під Token-2022 і розширення (TransferHook, MetadataPointer,
+# TokenMetadata) — увесь сенс продукту.
+anchor-spl = { workspace = true, features = ["token_2022", "token_2022_extensions", "associated_token"] }
+spl-transfer-hook-interface.workspace = true
+spl-tlv-account-resolution.workspace = true
+spl-pod.workspace = true
+spl-discriminator.workspace = true
+
+[dev-dependencies]
+# Хук викликається токен-програмою, а не нашим кодом: без справжнього рантайму
+# і ELF Token-2022 жоден тест не доходить до перевірки правила.
+mollusk-svm.workspace = true
+mollusk-svm-bencher.workspace = true
+mollusk-svm-programs-token.workspace = true
+solana-account.workspace = true
+solana-instruction.workspace = true
+solana-pubkey.workspace = true
+# `vested(now)` — властивості на випадкових графіках (SC-005); фікстури спільні
+# з TS-половиною, тому лежать у JSON.
+proptest.workspace = true
+serde_json.workspace = true

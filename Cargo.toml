@@ -1,0 +1,62 @@
+[workspace]
+resolver = "2"
+members = ["programs/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "UNLICENSED"
+repository = "https://github.com/capcaprail/CapRail"
+
+# Версії тут — єдине місце правди для всього воркспейсу. Cargo.lock комітиться
+# і є піном; підняття будь-якого solana-крейта — свідома дія з перезапуском
+# тестів і бенчмарку CU, не побічний ефект `cargo update`.
+[workspace.dependencies]
+anchor-lang = "1.2.0"
+anchor-spl = "1.2.0"
+
+# Інтерфейс transfer hook — рівно 2.1.0. Він сидить на solana-* ^3.0 і spl-pod
+# ^0.7 — тому самому кущі, що anchor-spl 1.2.0 (через spl-token-2022-interface
+# 2.1.0). Без «=» cargo при наступному мажорі підтягне гілку на іншому поколінні
+# solana-крейтів і дасть два несумісні `Pubkey` в одному крейті — саме так
+# розвалювалась збірка IssuerForge на 0.10.0 проти 2.x.
+spl-transfer-hook-interface = "=2.1.0"
+spl-tlv-account-resolution = "=0.11.3"
+spl-pod = "=0.7.4"
+spl-discriminator = "=0.5.2"
+
+# `spl-token-2022` окремим крейтом брати не можна: anchor-spl 1.2.0 працює через
+# `spl-token-2022-interface` і реекспортує його як
+# `anchor_spl::token_2022::spl_token_2022`. Два крейти одночасно — два набори
+# `ExtensionType`, і перевірка розширень звірялась би не з тим, що бачить
+# токен-програма.
+
+# Оснастка тестів. Mollusk живе на solana-крейтах ЧЕТВЕРТОГО покоління, а
+# anchor-lang — на третьому: `solana-pubkey` у локу буде двічі, і два `Pubkey`
+# між собою не сумісні. Тести конвертують ключі через `to_bytes()`.
+# litesvm тут не збирається з Anchor (E0027 `touched_flags`).
+mollusk-svm = "0.15.1"
+mollusk-svm-bencher = "0.15.1"
+mollusk-svm-programs-token = { version = "0.15.1", default-features = false, features = ["token-2022", "associated-token"] }
+solana-account = "4.3"
+solana-instruction = "3.4"
+solana-pubkey = "4.2"
+proptest = "1.11"
+serde_json = "1"
+
+[profile.release]
+# Хук рахує вестований залишок і суми пропозицій. Тихе переповнення тут — це
+# пропущений переказ понад дозволене, тому перевірки лишаються і в релізі.
+overflow-checks = true
+lto = "fat"
+codegen-units = 1
+
+[profile.release.build-override]
+opt-level = 3
+incremental = false
+codegen-units = 1
+
+# Тести й бенчмарк CU мають бути близькими до релізної збірки за арифметикою,
+# інакше виміряні числа не переносяться на те, що реально поїде в мережу.
+[profile.test]
+overflow-checks = true

@@ -1,0 +1,22 @@
+{
+  "name": "@caprail/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=../../.env src/index.ts",
+    "dev": "node --watch --env-file-if-exists=../../.env src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@caprail/chain": "workspace:^",
+    "@caprail/db": "workspace:^",
+    "@caprail/indexer": "workspace:^",
+    "@caprail/shared": "workspace:^",
+    "@solana/web3.js": "1.99.0",
+    "drizzle-orm": "0.45.2",
+    "pino": "10.3.1"
+  }
+}

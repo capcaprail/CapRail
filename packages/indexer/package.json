@@ -1,0 +1,20 @@
+{
+  "name": "@caprail/indexer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@anchor-lang/core": "1.2.0",
+    "@caprail/chain": "workspace:^",
+    "@caprail/shared": "workspace:^",
+    "@solana/web3.js": "1.99.0"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@caprail/demo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "demo": "node --env-file-if-exists=../../.env src/main.ts",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@anchor-lang/core": "1.2.0",
+    "@caprail/chain": "workspace:^",
+    "@caprail/shared": "workspace:^",
+    "@solana/spl-token": "0.4.15",
+    "@solana/web3.js": "1.99.0"
+  }
+}

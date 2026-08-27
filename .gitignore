@@ -1,0 +1,38 @@
+# Робочі документи проекту в репозиторій не потрапляють.
+# Наслідок, який треба тримати в голові: свіжий клон приходить без docs/ і
+# без CLAUDE.md, тобто нова сесія стартує без стану. Бекап — поза git.
+*.md
+!README.md
+
+# Експорт генератора інтерфейсів: несе власний package.json і .env із живим ключем.
+# Переноситься в apps/web руками (M0), сама тека в репо не потрапляє ніколи.
+noah-export/
+
+# Node
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+.vite/
+
+# Rust / Anchor
+target/
+.anchor/
+test-ledger/
+.build.log
+
+# Секрети. Програмний keypair теж: він дає право задеплоїти під той самий адрес.
+.env
+.env.*
+!.env.example
+*.pem
+id.json
+*-keypair.json
+*.keypair.json
+
+# Оточення розробника
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log

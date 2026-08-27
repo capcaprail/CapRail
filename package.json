@@ -1,0 +1,35 @@
+{
+  "name": "caprail",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Cap table on Solana: admission, vesting and ROFR enforced by the token itself",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "idl:sync": "node scripts/sync-idl.mjs",
+    "idl:check": "node scripts/sync-idl.mjs --check",
+    "gate": "pnpm idl:check && pnpm lint && pnpm typecheck && pnpm test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.13",
+    "@types/node": "22.20.2",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "ignoreMissing": [
+        "fastestsmallesttextencoderdecoder"
+      ]
+    }
+  }
+}
