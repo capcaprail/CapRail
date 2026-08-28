@@ -36,3 +36,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.log
+
+# Експорт Claude Design — те саме, що noah-export/: переноситься руками в apps/web (M0).
+design-export/
