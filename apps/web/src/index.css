@@ -1,3 +1,477 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Ledger system from the M0 brief in docs/. Carried over from the M0 canvas as-is so the
+   screens match the approved artboards; Tailwind utilities are used only for spacing. */
+@layer base {
+  body {
+    background: #fbfaf5;
+    color: #1c1e1a;
+    font-size: 14px;
+    line-height: 1.35;
+    -webkit-font-smoothing: antialiased;
+  }
+  a {
+    color: #1c1e1a;
+  }
+}
+
+@layer components {
+  .page {
+    padding: 20px 48px 72px;
+    min-height: 100vh;
+    background: #fbfaf5;
+  }
+  .proto {
+    font-size: 12px;
+    color: #6b6f66;
+  }
+  .nav {
+    display: flex;
+    gap: 18px;
+    margin-top: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #cfd8cc;
+    font-size: 14px;
+  }
+  .nav .cur {
+    border-bottom: 2px solid #1c1e1a;
+    padding-bottom: 2px;
+  }
+  .nav .oth {
+    color: #6b6f66;
+  }
+  h1,
+  h2 {
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 1.25;
+    margin: 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #cfd8cc;
+  }
+  h1 {
+    margin-top: 28px;
+  }
+  h2 {
+    margin-top: 44px;
+  }
+  .sub {
+    margin-top: 8px;
+    font-size: 14px;
+  }
+  .muted {
+    color: #6b6f66;
+  }
+  .lbl {
+    font-size: 12px;
+    color: #6b6f66;
+  }
+  .help {
+    font-size: 12px;
+    color: #6b6f66;
+    margin-top: 8px;
+  }
+  .line {
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  .fig,
+  .f {
+    font-size: 15px;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .act {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+    cursor: pointer;
+  }
+  .act.inert {
+    color: #6b6f66;
+    cursor: default;
+  }
+  .act.red {
+    color: #b03a2e;
+  }
+  .acts {
+    display: flex;
+    gap: 20px;
+    margin-top: 12px;
+  }
+  .hatch {
+    background: repeating-linear-gradient(45deg, #1c1e1a 0 1px, #fbfaf5 1px 5px);
+  }
+
+  /* ruled table */
+  .tb {
+    display: flex;
+    flex-direction: column;
+    margin-top: 2px;
+  }
+  .tr {
+    display: grid;
+    align-items: center;
+    column-gap: 12px;
+    border-bottom: 1px solid #cfd8cc;
+    min-height: 36px;
+  }
+  .tr.hd {
+    min-height: 26px;
+  }
+  .tr.empty {
+    min-height: 34px;
+  }
+  .tr.sub .k {
+    padding-left: 20px;
+  }
+  .dr {
+    align-self: stretch;
+    width: 5px;
+    background: linear-gradient(to right, #9aa595 0 1px, transparent 1px 4px, #9aa595 4px 5px);
+  }
+  .c {
+    padding: 8px 0;
+    min-width: 0;
+  }
+  .c.f {
+    text-align: right;
+  }
+  .tr.hd .c {
+    font-size: 12px;
+    color: #6b6f66;
+    padding: 4px 0;
+  }
+  .c.hatch > span {
+    background: #fbfaf5;
+    padding: 1px 4px;
+  }
+  .c.h {
+    display: block;
+  }
+  .c .note {
+    display: block;
+    font-size: 12px;
+    color: #6b6f66;
+  }
+  .k .note {
+    margin-top: 1px;
+  }
+
+  /* refusal stamp — the only rotated element and the only bordered box */
+  .stamp {
+    display: inline-block;
+    border: 1.5px solid #b03a2e;
+    border-radius: 3px;
+    padding: 4px 8px;
+    color: #b03a2e;
+    transform: rotate(-4deg);
+    position: relative;
+    z-index: 1;
+    margin: 2px 0 -8px;
+    line-height: 1.2;
+    text-align: left;
+    background: #fbfaf5;
+  }
+  .stamp b {
+    display: block;
+    font-weight: 400;
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+  .stamp i {
+    display: block;
+    font-style: normal;
+    font-size: 11px;
+    max-width: 240px;
+  }
+
+  /* ownership strip */
+  .strip {
+    display: flex;
+    gap: 1px;
+    height: 28px;
+    width: 100%;
+    animation: draw 400ms ease-out both;
+  }
+  @keyframes draw {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+  .seg {
+    position: relative;
+    background: #1c1e1a;
+    min-width: 0;
+  }
+  .seg.tre {
+    background: #fbfaf5;
+    box-shadow: inset 0 0 0 1px #cfd8cc;
+  }
+  .seg .un {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+  }
+  .seg .tip {
+    display: none;
+    position: absolute;
+    top: 34px;
+    left: 0;
+    z-index: 3;
+    background: #fbfaf5;
+    color: #1c1e1a;
+    border: 1px solid #cfd8cc;
+    padding: 6px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .seg.r .tip {
+    left: auto;
+    right: 0;
+  }
+  .seg:hover .tip {
+    display: block;
+  }
+  .strip-l {
+    display: flex;
+    gap: 1px;
+    margin-top: 6px;
+    font-size: 12px;
+  }
+  .strip-l .lb {
+    min-width: 0;
+  }
+  .strip-l .lb span {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .also {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #6b6f66;
+  }
+  .bar {
+    display: flex;
+    gap: 1px;
+    height: 20px;
+    width: 100%;
+    margin-top: 12px;
+  }
+  .bar .v {
+    background: #1c1e1a;
+  }
+
+  /* filter and switch lines */
+  .fl {
+    display: flex;
+    gap: 18px;
+    margin-top: 16px;
+    font-size: 14px;
+  }
+  .fl .i {
+    cursor: pointer;
+    color: #6b6f66;
+  }
+  .fl .i.cur {
+    color: #1c1e1a;
+    border-bottom: 2px solid #1c1e1a;
+  }
+  .counts {
+    margin-top: 14px;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  /* inputs: a ruled line, not a box */
+  .in {
+    font: inherit;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums lining-nums;
+    text-align: right;
+    width: 120px;
+    padding: 4px 0;
+    border: 0;
+    border-bottom: 1px solid #1c1e1a;
+    background: #fbfaf5;
+    color: #1c1e1a;
+    outline: none;
+    border-radius: 0;
+  }
+  .in-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #cfd8cc;
+  }
+  .in-row .lbl {
+    flex: 0 0 auto;
+  }
+  .in-row .help {
+    margin: 0;
+  }
+
+  /* two-column ledger block: label ‖ figure */
+  .kv .tr {
+    grid-template-columns: 220px 5px 1fr;
+  }
+  .kv .c.f {
+    text-align: left;
+  }
+  .kv.right .c.f {
+    text-align: right;
+  }
+
+  @media (max-width: 600px) {
+    .page {
+      padding: 16px 16px 56px;
+    }
+    h1 {
+      margin-top: 22px;
+    }
+    h2 {
+      margin-top: 36px;
+    }
+    .tr {
+      display: block;
+      border-bottom: 0;
+      padding: 0 0 12px;
+      min-height: 0;
+    }
+    .tr.hd {
+      display: none;
+    }
+    .tr .dr {
+      display: none;
+    }
+    .tr.empty {
+      display: block;
+      height: 30px;
+      padding: 0;
+      border-bottom: 1px solid #cfd8cc;
+    }
+    .tr.sub .k {
+      padding-left: 16px;
+    }
+    .c {
+      display: grid;
+      grid-template-columns: 1fr 5px auto;
+      column-gap: 12px;
+      align-items: center;
+      border-bottom: 1px solid #cfd8cc;
+      padding: 6px 0;
+      text-align: right;
+    }
+    .c::before {
+      content: attr(data-l);
+      order: -2;
+      font-size: 12px;
+      color: #6b6f66;
+      text-align: left;
+      font-variant-numeric: normal;
+      font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      white-space: normal;
+    }
+    .c::after {
+      content: "";
+      order: -1;
+      align-self: stretch;
+      width: 5px;
+      background: linear-gradient(to right, #9aa595 0 1px, transparent 1px 4px, #9aa595 4px 5px);
+    }
+    .c:empty {
+      display: none;
+    }
+    .c.k,
+    .c.h,
+    .c[data-l=""] {
+      display: block;
+      text-align: left;
+    }
+    .c[data-l=""]::before,
+    .c[data-l=""]::after {
+      display: none;
+    }
+    .c.k::before,
+    .c.k::after,
+    .c.h::before,
+    .c.h::after {
+      display: none;
+    }
+    .c.hatch {
+      background: none;
+    }
+    .c.hatch > span {
+      background: repeating-linear-gradient(45deg, #1c1e1a 0 1px, #fbfaf5 1px 5px);
+      padding: 3px 0 3px 24px;
+    }
+    .c.hatch > span > span {
+      background: #fbfaf5;
+      padding: 1px 4px;
+    }
+    .stamp i {
+      max-width: 180px;
+    }
+    .kv .tr {
+      display: grid;
+      grid-template-columns: 120px 5px 1fr;
+      border-bottom: 1px solid #cfd8cc;
+      padding: 0;
+    }
+    .kv .tr .dr {
+      display: block;
+    }
+    .kv .c {
+      display: block;
+      border-bottom: 0;
+      text-align: left;
+    }
+    .kv .c::before,
+    .kv .c::after {
+      display: none;
+    }
+    .in-row {
+      flex-wrap: wrap;
+    }
+  }
+
+  /* column templates, desktop */
+  .cap .tr {
+    grid-template-columns: 1fr 110px 5px 130px 90px 130px 150px;
+  }
+  .inv .tr {
+    grid-template-columns: 1fr 110px 5px 190px 130px 150px 170px 110px;
+  }
+  .jr .tr {
+    grid-template-columns: 130px 1fr 1fr 5px 110px 260px 90px 100px;
+  }
+  .off .tr {
+    grid-template-columns: 1fr 130px 5px 100px 100px 100px 140px 110px 140px 100px;
+  }
+  .my .tr {
+    grid-template-columns: 1fr 5px 150px 200px 180px 100px;
+  }
+  .off .tr.pick {
+    cursor: pointer;
+  }
+  .jr[data-f="settled"] .tr.ref,
+  .att[data-f="settled"] .tr.ref {
+    display: none;
+  }
+  .jr[data-f="refused"] .tr.set,
+  .att[data-f="refused"] .tr.set {
+    display: none;
+  }
+}
