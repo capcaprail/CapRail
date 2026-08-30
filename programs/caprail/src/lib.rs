@@ -7,6 +7,10 @@
 
 use anchor_lang::prelude::*;
 
+pub mod errors;
+
+pub use errors::CaprailError;
+
 declare_id!("As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g");
 
 #[program]
