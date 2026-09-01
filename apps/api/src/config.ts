@@ -1,28 +1,10 @@
+import { databaseUrlSchema, isPooled, POOLER_PORT } from '@caprail/db'
 import { z } from 'zod'
 
 export const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const
 export type LogLevel = (typeof LOG_LEVELS)[number]
 
 export const DEFAULT_PORT = 8787
-// Supabase transaction pooler. Direct 5432 gives two connections for all services on
-// the free tier, and it is IPv6-only — a wrong port fails later, in the other service.
-export const POOLER_PORT = 6543
-
-// `.env.example` ships placeholders; a value that still holds one is a copy that was
-// never filled in, and the safest reaction is to not start at all.
-const filled = z.string().refine((value) => !value.includes('REPLACE_ME'), {
-  message: 'placeholder REPLACE_ME was not replaced',
-})
-
-function postgresPort(value: string): string | null {
-  try {
-    const url = new URL(value)
-    if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') return null
-    return url.port === '' ? '5432' : url.port
-  } catch {
-    return null
-  }
-}
 
 const originList = z
   .string()
@@ -32,9 +14,7 @@ const originList = z
 export const apiConfigSchema = z
   .object({
     port: z.coerce.number().int().min(1).max(65_535).prefault(DEFAULT_PORT),
-    databaseUrl: filled.refine((value) => postgresPort(value) !== null, {
-      message: 'expected a postgres:// connection string',
-    }),
+    databaseUrl: databaseUrlSchema,
     allowDirectDatabase: z
       .string()
       .optional()
@@ -42,14 +22,10 @@ export const apiConfigSchema = z
     logLevel: z.enum(LOG_LEVELS).prefault('info'),
     webOrigins: originList,
   })
-  .refine(
-    (config) =>
-      config.allowDirectDatabase || postgresPort(config.databaseUrl) === String(POOLER_PORT),
-    {
-      path: ['databaseUrl'],
-      message: `expected the transaction pooler port ${POOLER_PORT}; set ALLOW_DIRECT_DATABASE=true to opt out`,
-    },
-  )
+  .refine((config) => config.allowDirectDatabase || isPooled(config.databaseUrl), {
+    path: ['databaseUrl'],
+    message: `expected the transaction pooler port ${POOLER_PORT}; set ALLOW_DIRECT_DATABASE=true to opt out`,
+  })
 
 export type ApiConfig = z.infer<typeof apiConfigSchema>
 
