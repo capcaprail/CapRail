@@ -1,5 +1,5 @@
 import type { Context, MiddlewareHandler } from 'hono'
-import type { AppEnv } from '../logger.ts'
+import type { AppEnv } from '../env.ts'
 import { fail } from './errors.ts'
 
 export const RATE_LIMIT = 60

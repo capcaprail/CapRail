@@ -1,7 +1,7 @@
 import { apiErrorSchema } from '@caprail/shared'
 import { Hono } from 'hono'
 import { describe, expect, it } from 'vitest'
-import type { AppEnv } from '../logger.ts'
+import type { AppEnv } from '../env.ts'
 import { clientIp, rateLimit } from './rate-limit.ts'
 
 function build(options: { limit: number; windowMs: number; now: () => number }) {

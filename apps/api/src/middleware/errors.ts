@@ -2,11 +2,12 @@ import { type ApiErrorCode, apiError } from '@caprail/shared'
 import type { Context, Env, ErrorHandler, NotFoundHandler } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
-import type { AppEnv } from '../logger.ts'
+import type { AppEnv } from '../env.ts'
 
 const HTTP_STATUS: Record<ApiErrorCode, ContentfulStatusCode> = {
   INVALID_INPUT: 400,
   UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
   NOT_FOUND: 404,
   RATE_LIMITED: 429,
   INTERNAL: 500,
@@ -15,6 +16,7 @@ const HTTP_STATUS: Record<ApiErrorCode, ContentfulStatusCode> = {
 const CODE_BY_STATUS: Partial<Record<number, ApiErrorCode>> = {
   400: 'INVALID_INPUT',
   401: 'UNAUTHORIZED',
+  403: 'FORBIDDEN',
   404: 'NOT_FOUND',
   429: 'RATE_LIMITED',
 }

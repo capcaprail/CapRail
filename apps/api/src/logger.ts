@@ -1,6 +1,7 @@
 import type { MiddlewareHandler } from 'hono'
 import { type Logger as PinoLogger, pino } from 'pino'
 import type { LogLevel } from './config.ts'
+import type { AppEnv } from './env.ts'
 
 export type Logger = PinoLogger
 
@@ -13,10 +14,6 @@ export function createLogger(level: LogLevel): Logger {
     timestamp: pino.stdTimeFunctions.isoTime,
     redact: { paths: ['req.headers.authorization', 'req.headers.cookie'], remove: true },
   })
-}
-
-export type AppEnv = {
-  Variables: { logger: Logger; requestId: string }
 }
 
 export const REQUEST_ID_HEADER = 'x-request-id'

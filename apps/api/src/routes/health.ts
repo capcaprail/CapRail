@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import type { AppEnv } from '../logger.ts'
+import type { AppEnv } from '../env.ts'
 
 export const HEALTH_TIMEOUT_MS = 2_000
 

@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const API_ERROR_CODES = [
   'INVALID_INPUT',
   'UNAUTHORIZED',
+  'FORBIDDEN',
   'NOT_FOUND',
   'RATE_LIMITED',
   'INTERNAL',

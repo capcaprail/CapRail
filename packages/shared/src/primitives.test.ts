@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { decodeBase58, isOnCurve, isWalletAddress, walletAddressSchema } from './primitives.ts'
+import {
+  decodeBase58,
+  encodeBase58,
+  isOnCurve,
+  isWalletAddress,
+  walletAddressSchema,
+} from './primitives.ts'
 
 const PROGRAM_ID = 'As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g'
 const ATA_PROGRAM = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
@@ -72,5 +78,17 @@ describe('walletAddressSchema', () => {
       expect(walletAddressSchema.safeParse(bad).success).toBe(false)
       expect(isWalletAddress(bad)).toBe(false)
     }
+  })
+})
+
+describe('encodeBase58', () => {
+  it('round-trips keys and keeps leading zero bytes', () => {
+    for (const key of [PROGRAM_ID, SYSTEM_PROGRAM, PDA_COMPANY]) {
+      const bytes = decodeBase58(key)
+      expect(bytes).not.toBeNull()
+      expect(encodeBase58(bytes as Uint8Array)).toBe(key)
+    }
+    expect(encodeBase58(new Uint8Array([0, 0, 1]))).toBe('112')
+    expect(encodeBase58(new Uint8Array())).toBe('')
   })
 })

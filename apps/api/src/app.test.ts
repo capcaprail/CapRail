@@ -2,6 +2,8 @@ import { apiErrorSchema } from '@caprail/shared'
 import { pino } from 'pino'
 import { describe, expect, it } from 'vitest'
 import { type AppDeps, createApp } from './app.ts'
+import { createSessionTokens } from './auth/jwt.ts'
+import { memoryNonceStore } from './auth/nonce-store.ts'
 import { REQUEST_ID_HEADER } from './logger.ts'
 
 const ORIGIN = 'http://localhost:5173'
@@ -11,6 +13,11 @@ function build(overrides: Partial<AppDeps> = {}) {
     logger: pino({ level: 'silent' }),
     webOrigins: [ORIGIN],
     health: { ping: () => Promise.resolve(), cursor: () => Promise.resolve(null) },
+    auth: {
+      nonces: memoryNonceStore(),
+      tokens: createSessionTokens({ secret: 's'.repeat(32) }),
+      memberships: () => Promise.resolve([]),
+    },
     ...overrides,
   })
 }
@@ -94,10 +101,9 @@ describe('cors', () => {
 describe('rate limit placement', () => {
   it('throttles /auth/* and /attempts but not /health', async () => {
     const app = build({ rateLimit: { limit: 1 } })
-    app.get('/auth/nonce', (c) => c.json({}))
     app.get('/attempts', (c) => c.json({}))
-    expect((await app.request('/auth/nonce')).status).toBe(200)
-    expect((await app.request('/auth/nonce')).status).toBe(429)
+    expect((await app.request('/auth/nonce', { method: 'POST' })).status).toBe(400)
+    expect((await app.request('/auth/nonce', { method: 'POST' })).status).toBe(429)
     expect((await app.request('/attempts')).status).toBe(429)
     for (let i = 0; i < 3; i += 1) expect((await app.request('/health')).status).toBe(200)
   })

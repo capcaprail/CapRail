@@ -20,6 +20,19 @@ export function decodeBase58(text: string): Uint8Array | null {
   return new Uint8Array([...new Array<number>(leadingZeros).fill(0), ...bytes.reverse()])
 }
 
+export function encodeBase58(bytes: Uint8Array): string {
+  let value = 0n
+  for (const byte of bytes) value = (value << 8n) | BigInt(byte)
+  let text = ''
+  while (value > 0n) {
+    text = BASE58_ALPHABET[Number(value % 58n)] + text
+    value /= 58n
+  }
+  let leadingZeros = 0
+  while (leadingZeros < bytes.length && bytes[leadingZeros] === 0) leadingZeros += 1
+  return '1'.repeat(leadingZeros) + text
+}
+
 const P = 2n ** 255n - 19n
 
 function mod(a: bigint): bigint {
