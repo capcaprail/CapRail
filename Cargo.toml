@@ -32,8 +32,10 @@ spl-discriminator = "=0.5.2"
 # токен-програма.
 
 # Оснастка тестів. Mollusk живе на solana-крейтах ЧЕТВЕРТОГО покоління, а
-# anchor-lang — на третьому: `solana-pubkey` у локу буде двічі, і два `Pubkey`
-# між собою не сумісні. Тести конвертують ключі через `to_bytes()`.
+# anchor-lang — на третьому: `solana-pubkey` у локу двічі (3.0.0 і 4.2.1). На
+# цьому локу обидва — реекспорт одного `solana-address 2.6.1`, тож `Pubkey`
+# один і той самий тип і мосту `to_bytes()` не потрібно; тест
+# `pubkey_types_are_one` тримає це під компілятором.
 # litesvm тут не збирається з Anchor (E0027 `touched_flags`).
 mollusk-svm = "0.15.1"
 mollusk-svm-bencher = "0.15.1"
