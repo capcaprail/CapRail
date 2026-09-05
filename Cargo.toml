@@ -43,6 +43,10 @@ mollusk-svm-programs-token = { version = "0.15.1", default-features = false, fea
 solana-account = "4.3"
 solana-instruction = "3.4"
 solana-pubkey = "4.2"
+# Події: Anchor пише їх у лог як `Program data: <base64>`; збирач логів і
+# base64 — щоб тест читав подію, а не вірив, що `emit!` спрацював.
+solana-svm-log-collector = "4.2"
+base64 = "0.22"
 proptest = "1.11"
 serde_json = "1"
 

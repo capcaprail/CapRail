@@ -23,4 +23,8 @@ pub enum CaprailError {
     TokenConfigMismatch,
     #[msg("ROFR is not available in this version")]
     RofrNotSupported,
+    #[msg("admin and compliance officer must be two different, non-zero keys")]
+    InvalidRoles,
+    #[msg("company name must be 1..=32 bytes of UTF-8")]
+    InvalidName,
 }

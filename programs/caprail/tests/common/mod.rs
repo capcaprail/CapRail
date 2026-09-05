@@ -28,6 +28,7 @@ use anchor_lang::prelude::{AccountDeserialize, Pubkey};
 use anchor_lang::solana_program::program_error::ProgramError;
 use anchor_lang::solana_program::program_option::COption;
 use anchor_lang::solana_program::program_pack::Pack;
+use anchor_lang::{AnchorDeserialize, Discriminator};
 use anchor_spl::associated_token::get_associated_token_address_with_program_id;
 use anchor_spl::token_2022::spl_token_2022::extension::immutable_owner::ImmutableOwner;
 use anchor_spl::token_2022::spl_token_2022::extension::transfer_hook::{
@@ -39,6 +40,8 @@ use anchor_spl::token_2022::spl_token_2022::extension::{
 };
 use anchor_spl::token_2022::spl_token_2022::state::{Account as TokenAccount, AccountState, Mint};
 use anchor_spl::token_2022::spl_token_2022::{self, instruction as token_instruction};
+use base64::engine::general_purpose::STANDARD as BASE64;
+use base64::Engine;
 use caprail::CaprailError;
 use mollusk_svm::program::{create_program_account_loader_v3, loader_keys::LOADER_V3};
 use mollusk_svm::result::{InstructionResult, ProgramResult};
@@ -46,6 +49,7 @@ use mollusk_svm::Mollusk;
 use mollusk_svm_programs_token::{associated_token, token2022};
 use solana_account::Account;
 use solana_instruction::{AccountMeta, Instruction};
+use solana_svm_log_collector::LogCollector;
 use spl_pod::optional_keys::OptionalNonZeroPubkey;
 
 pub const LAMPORTS_PER_SOL: u64 = 1_000_000_000;
@@ -84,6 +88,8 @@ pub fn mollusk() -> Mollusk {
     token2022::add_program(&mut mollusk);
     associated_token::add_program(&mut mollusk);
     set_clock(&mut mollusk, GENESIS_SLOT, GENESIS_UNIX_TS);
+    // Без збирача логи програми нікуди не пишуться — і подій не побачити.
+    mollusk.logger = Some(LogCollector::new_ref());
     mollusk
 }
 
@@ -365,4 +371,26 @@ pub fn custom_error_code(result: &InstructionResult) -> Option<u32> {
 
 pub fn is_success(result: &InstructionResult) -> bool {
     result.program_result == ProgramResult::Success
+}
+
+// ── Події ────────────────────────────────────────────────────────────────────
+
+/// Логи, накопичені з моменту створення стенду (або останнього `take_logs`).
+pub fn take_logs(mollusk: &Mollusk) -> Vec<String> {
+    let logger = mollusk.logger.as_ref().expect("стенд створює збирач логів");
+    std::mem::take(&mut logger.borrow_mut().messages)
+}
+
+/// Події з логів: `emit!` пише `Program data: <base64>`, де перші 8 байтів —
+/// дискримінатор події. Порядок — як у логах, включно з подіями CPI.
+pub fn events<T: Discriminator + AnchorDeserialize>(logs: &[String]) -> Vec<T> {
+    logs.iter()
+        .filter_map(|line| line.strip_prefix("Program data: "))
+        .flat_map(|payload| payload.split(' '))
+        .map(|chunk| BASE64.decode(chunk).expect("base64 у Program data"))
+        .filter(|bytes| bytes.starts_with(T::DISCRIMINATOR))
+        .map(|bytes| {
+            T::try_from_slice(&bytes[T::DISCRIMINATOR.len()..]).expect("подія має читатися")
+        })
+        .collect()
 }

@@ -851,6 +851,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "base64 0.22.1",
  "mollusk-svm",
  "mollusk-svm-bencher",
  "mollusk-svm-programs-token",
@@ -859,6 +860,7 @@ dependencies = [
  "solana-account",
  "solana-instruction",
  "solana-pubkey 4.2.1",
+ "solana-svm-log-collector",
  "spl-discriminator",
  "spl-pod",
  "spl-tlv-account-resolution",
