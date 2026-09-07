@@ -265,6 +265,160 @@ export type Caprail = {
           }
         }
       ]
+    },
+    {
+      "name": "setInvestorStatus",
+      "discriminator": [
+        191,
+        183,
+        14,
+        48,
+        42,
+        85,
+        46,
+        123
+      ],
+      "accounts": [
+        {
+          "name": "complianceOfficer",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "company"
+          ]
+        },
+        {
+          "name": "company",
+          "relations": [
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "tokenConfig"
+        },
+        {
+          "name": "investorRecord",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  118,
+                  101,
+                  115,
+                  116,
+                  111,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tokenConfig.mint",
+                "account": "tokenConfig"
+              },
+              {
+                "kind": "arg",
+                "path": "args.wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "setInvestorStatusArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "setPolicy",
+      "discriminator": [
+        40,
+        133,
+        12,
+        157,
+        235,
+        202,
+        2,
+        132
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "company"
+          ]
+        },
+        {
+          "name": "company",
+          "relations": [
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "tokenConfig",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "policy",
+          "type": {
+            "defined": {
+              "name": "transferPolicy"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "setRoles",
+      "discriminator": [
+        119,
+        86,
+        129,
+        161,
+        55,
+        23,
+        250,
+        12
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "company"
+          ]
+        },
+        {
+          "name": "company",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "admin",
+          "type": "pubkey"
+        },
+        {
+          "name": "complianceOfficer",
+          "type": "pubkey"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -279,6 +433,19 @@ export type Caprail = {
         7,
         206,
         183
+      ]
+    },
+    {
+      "name": "investorRecord",
+      "discriminator": [
+        170,
+        144,
+        39,
+        68,
+        178,
+        31,
+        194,
+        117
       ]
     },
     {
@@ -307,6 +474,45 @@ export type Caprail = {
         83,
         112,
         99
+      ]
+    },
+    {
+      "name": "investorStatusSet",
+      "discriminator": [
+        245,
+        49,
+        137,
+        232,
+        163,
+        145,
+        127,
+        35
+      ]
+    },
+    {
+      "name": "policySet",
+      "discriminator": [
+        126,
+        246,
+        69,
+        48,
+        9,
+        240,
+        226,
+        52
+      ]
+    },
+    {
+      "name": "rolesSet",
+      "discriminator": [
+        214,
+        13,
+        236,
+        87,
+        106,
+        220,
+        125,
+        38
       ]
     },
     {
@@ -388,6 +594,16 @@ export type Caprail = {
       "code": 6012,
       "name": "invalidPolicy",
       "msg": "policy values are out of range"
+    },
+    {
+      "code": 6013,
+      "name": "invalidJurisdiction",
+      "msg": "jurisdiction must be two uppercase ASCII letters or left unset"
+    },
+    {
+      "code": 6014,
+      "name": "invalidExpiry",
+      "msg": "an approved investor needs an expiry in the future"
     }
   ],
   "types": [
@@ -508,6 +724,222 @@ export type Caprail = {
                 "name": "transferPolicy"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "investorRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "investorStatus"
+              }
+            }
+          },
+          {
+            "name": "expiresAt",
+            "type": "i64"
+          },
+          {
+            "name": "jurisdiction",
+            "type": {
+              "array": [
+                "u8",
+                2
+              ]
+            }
+          },
+          {
+            "name": "investorType",
+            "type": "u8"
+          },
+          {
+            "name": "updatedAt",
+            "type": "i64"
+          },
+          {
+            "name": "updatedBy",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "investorStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "none"
+          },
+          {
+            "name": "approved"
+          },
+          {
+            "name": "revoked"
+          }
+        ]
+      }
+    },
+    {
+      "name": "investorStatusSet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "company",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "investorStatus"
+              }
+            }
+          },
+          {
+            "name": "expiresAt",
+            "type": "i64"
+          },
+          {
+            "name": "jurisdiction",
+            "type": {
+              "array": [
+                "u8",
+                2
+              ]
+            }
+          },
+          {
+            "name": "investorType",
+            "type": "u8"
+          },
+          {
+            "name": "updatedAt",
+            "type": "i64"
+          },
+          {
+            "name": "updatedBy",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "policySet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "company",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "policy",
+            "type": {
+              "defined": {
+                "name": "transferPolicy"
+              }
+            }
+          },
+          {
+            "name": "policyVersion",
+            "type": "u32"
+          },
+          {
+            "name": "setAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "rolesSet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "company",
+            "type": "pubkey"
+          },
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "complianceOfficer",
+            "type": "pubkey"
+          },
+          {
+            "name": "setAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "setInvestorStatusArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "investorStatus"
+              }
+            }
+          },
+          {
+            "name": "expiresAt",
+            "type": "i64"
+          },
+          {
+            "name": "jurisdiction",
+            "type": {
+              "array": [
+                "u8",
+                2
+              ]
+            }
+          },
+          {
+            "name": "investorType",
+            "type": "u8"
           }
         ]
       }
@@ -883,6 +1315,160 @@ export const IDL: Caprail = {
           }
         }
       ]
+    },
+    {
+      "name": "setInvestorStatus",
+      "discriminator": [
+        191,
+        183,
+        14,
+        48,
+        42,
+        85,
+        46,
+        123
+      ],
+      "accounts": [
+        {
+          "name": "complianceOfficer",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "company"
+          ]
+        },
+        {
+          "name": "company",
+          "relations": [
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "tokenConfig"
+        },
+        {
+          "name": "investorRecord",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  118,
+                  101,
+                  115,
+                  116,
+                  111,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tokenConfig.mint",
+                "account": "tokenConfig"
+              },
+              {
+                "kind": "arg",
+                "path": "args.wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "setInvestorStatusArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "setPolicy",
+      "discriminator": [
+        40,
+        133,
+        12,
+        157,
+        235,
+        202,
+        2,
+        132
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "company"
+          ]
+        },
+        {
+          "name": "company",
+          "relations": [
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "tokenConfig",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "policy",
+          "type": {
+            "defined": {
+              "name": "transferPolicy"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "setRoles",
+      "discriminator": [
+        119,
+        86,
+        129,
+        161,
+        55,
+        23,
+        250,
+        12
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "company"
+          ]
+        },
+        {
+          "name": "company",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "admin",
+          "type": "pubkey"
+        },
+        {
+          "name": "complianceOfficer",
+          "type": "pubkey"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -897,6 +1483,19 @@ export const IDL: Caprail = {
         7,
         206,
         183
+      ]
+    },
+    {
+      "name": "investorRecord",
+      "discriminator": [
+        170,
+        144,
+        39,
+        68,
+        178,
+        31,
+        194,
+        117
       ]
     },
     {
@@ -925,6 +1524,45 @@ export const IDL: Caprail = {
         83,
         112,
         99
+      ]
+    },
+    {
+      "name": "investorStatusSet",
+      "discriminator": [
+        245,
+        49,
+        137,
+        232,
+        163,
+        145,
+        127,
+        35
+      ]
+    },
+    {
+      "name": "policySet",
+      "discriminator": [
+        126,
+        246,
+        69,
+        48,
+        9,
+        240,
+        226,
+        52
+      ]
+    },
+    {
+      "name": "rolesSet",
+      "discriminator": [
+        214,
+        13,
+        236,
+        87,
+        106,
+        220,
+        125,
+        38
       ]
     },
     {
@@ -1006,6 +1644,16 @@ export const IDL: Caprail = {
       "code": 6012,
       "name": "invalidPolicy",
       "msg": "policy values are out of range"
+    },
+    {
+      "code": 6013,
+      "name": "invalidJurisdiction",
+      "msg": "jurisdiction must be two uppercase ASCII letters or left unset"
+    },
+    {
+      "code": 6014,
+      "name": "invalidExpiry",
+      "msg": "an approved investor needs an expiry in the future"
     }
   ],
   "types": [
@@ -1126,6 +1774,222 @@ export const IDL: Caprail = {
                 "name": "transferPolicy"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "investorRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "investorStatus"
+              }
+            }
+          },
+          {
+            "name": "expiresAt",
+            "type": "i64"
+          },
+          {
+            "name": "jurisdiction",
+            "type": {
+              "array": [
+                "u8",
+                2
+              ]
+            }
+          },
+          {
+            "name": "investorType",
+            "type": "u8"
+          },
+          {
+            "name": "updatedAt",
+            "type": "i64"
+          },
+          {
+            "name": "updatedBy",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "investorStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "none"
+          },
+          {
+            "name": "approved"
+          },
+          {
+            "name": "revoked"
+          }
+        ]
+      }
+    },
+    {
+      "name": "investorStatusSet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "company",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "investorStatus"
+              }
+            }
+          },
+          {
+            "name": "expiresAt",
+            "type": "i64"
+          },
+          {
+            "name": "jurisdiction",
+            "type": {
+              "array": [
+                "u8",
+                2
+              ]
+            }
+          },
+          {
+            "name": "investorType",
+            "type": "u8"
+          },
+          {
+            "name": "updatedAt",
+            "type": "i64"
+          },
+          {
+            "name": "updatedBy",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "policySet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "company",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "policy",
+            "type": {
+              "defined": {
+                "name": "transferPolicy"
+              }
+            }
+          },
+          {
+            "name": "policyVersion",
+            "type": "u32"
+          },
+          {
+            "name": "setAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "rolesSet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "company",
+            "type": "pubkey"
+          },
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "complianceOfficer",
+            "type": "pubkey"
+          },
+          {
+            "name": "setAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "setInvestorStatusArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "investorStatus"
+              }
+            }
+          },
+          {
+            "name": "expiresAt",
+            "type": "i64"
+          },
+          {
+            "name": "jurisdiction",
+            "type": {
+              "array": [
+                "u8",
+                2
+              ]
+            }
+          },
+          {
+            "name": "investorType",
+            "type": "u8"
           }
         ]
       }

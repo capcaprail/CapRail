@@ -7,6 +7,12 @@
 
 pub mod create_company;
 pub mod create_token;
+pub mod set_investor_status;
+pub mod set_policy;
+pub mod set_roles;
 
 pub use create_company::*;
 pub use create_token::*;
+pub use set_investor_status::*;
+pub use set_policy::*;
+pub use set_roles::*;

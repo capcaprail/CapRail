@@ -33,4 +33,8 @@ pub enum CaprailError {
     InvalidSupply,
     #[msg("policy values are out of range")]
     InvalidPolicy,
+    #[msg("jurisdiction must be two uppercase ASCII letters or left unset")]
+    InvalidJurisdiction,
+    #[msg("an approved investor needs an expiry in the future")]
+    InvalidExpiry,
 }

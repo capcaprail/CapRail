@@ -24,6 +24,18 @@ impl Company {
     pub const NAME_LEN: usize = 32;
     pub const SPACE: usize = DISCRIMINATOR_LEN + Self::INIT_SPACE;
 
+    // Дві ролі — два ключі (FR-004). Нульовий ключ виключається окремо: ним
+    // ніхто не підпише, і компанія лишилась би без цієї ролі назавжди.
+    pub fn validate_roles(admin: &Pubkey, compliance_officer: &Pubkey) -> Result<()> {
+        require!(
+            admin != compliance_officer
+                && *admin != Pubkey::default()
+                && *compliance_officer != Pubkey::default(),
+            crate::CaprailError::InvalidRoles
+        );
+        Ok(())
+    }
+
     pub fn find_address(company_id: u64) -> (Pubkey, u8) {
         Pubkey::find_program_address(&[Self::SEED, &company_id.to_le_bytes()], &crate::ID)
     }

@@ -37,12 +37,7 @@ pub fn create_company_handler(ctx: Context<CreateCompany>, args: CreateCompanyAr
         CaprailError::InvalidName
     );
     let admin = ctx.accounts.admin.key();
-    // Дві ролі — два ключі (FR-004). Нульовий ключ виключається окремо: ним
-    // ніхто не підпише, і компанія лишилась би без офіцера назавжди.
-    require!(
-        args.compliance_officer != admin && args.compliance_officer != Pubkey::default(),
-        CaprailError::InvalidRoles
-    );
+    Company::validate_roles(&admin, &args.compliance_officer)?;
 
     let company = &mut ctx.accounts.company;
     company.company_id = args.company_id;
