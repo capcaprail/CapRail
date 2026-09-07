@@ -14,3 +14,10 @@ pub use token_config::*;
 
 /// Дискримінатор Anchor перед даними кожного `#[account]`.
 pub const DISCRIMINATOR_LEN: usize = 8;
+
+// Seeds акаунтів, яких ще немає: `Grant` (US3) і `TransferPermit` (US2). Їхні
+// адреси вже зашиті в `ExtraAccountMetaList` кожного випущеного токена, тож
+// коли структури з'являться, вони зобов'язані взяти seed звідси — інакше хук
+// шукатиме акаунт за однією адресою, а інструкція створюватиме за іншою.
+pub const GRANT_SEED: &[u8] = b"grant";
+pub const PERMIT_SEED: &[u8] = b"permit";

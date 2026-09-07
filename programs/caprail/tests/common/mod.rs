@@ -28,9 +28,10 @@ use anchor_lang::prelude::{AccountDeserialize, Pubkey};
 use anchor_lang::solana_program::program_error::ProgramError;
 use anchor_lang::solana_program::program_option::COption;
 use anchor_lang::solana_program::program_pack::Pack;
-use anchor_lang::{AnchorDeserialize, Discriminator};
+use anchor_lang::{AnchorDeserialize, AnchorSerialize, Discriminator};
 use anchor_spl::associated_token::get_associated_token_address_with_program_id;
 use anchor_spl::token_2022::spl_token_2022::extension::immutable_owner::ImmutableOwner;
+use anchor_spl::token_2022::spl_token_2022::extension::metadata_pointer::MetadataPointer;
 use anchor_spl::token_2022::spl_token_2022::extension::transfer_hook::{
     TransferHook, TransferHookAccount,
 };
@@ -40,6 +41,7 @@ use anchor_spl::token_2022::spl_token_2022::extension::{
 };
 use anchor_spl::token_2022::spl_token_2022::state::{Account as TokenAccount, AccountState, Mint};
 use anchor_spl::token_2022::spl_token_2022::{self, instruction as token_instruction};
+use anchor_spl::token_2022_extensions::spl_token_metadata_interface::state::TokenMetadata;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use caprail::CaprailError;
@@ -336,6 +338,45 @@ pub fn token_amount(result: &InstructionResult, key: &Pubkey) -> u64 {
         .expect("токен-акаунт має читатися")
         .base
         .amount
+}
+
+/// Акаунт, який у мережі створила б сама програма: дискримінатор Anchor плюс
+/// borsh-тіло. Дозволяє починати тест зі стану «компанія вже є», не проганяючи
+/// попередню інструкцію заради її побічного ефекту.
+pub fn anchor_account<T: Discriminator + AnchorSerialize>(mollusk: &Mollusk, state: &T) -> Account {
+    let mut data = T::DISCRIMINATOR.to_vec();
+    state
+        .serialize(&mut data)
+        .expect("стан має серіалізуватись");
+    rent_exempt(mollusk, data, caprail::ID)
+}
+
+pub fn mint_base(account: &Account) -> Mint {
+    StateWithExtensions::<Mint>::unpack(&account.data)
+        .expect("мінт має читатися")
+        .base
+}
+
+/// `None` означає відкликане право емісії — випуск зафіксований назавжди.
+pub fn mint_authority_of(account: &Account) -> Option<Pubkey> {
+    Option::from(mint_base(account).mint_authority)
+}
+
+/// Метадані живуть у самому мінті (`MetadataPointer` вказує на нього ж), тому
+/// читаються як розширення змінної довжини.
+pub fn mint_metadata(account: &Account) -> TokenMetadata {
+    StateWithExtensions::<Mint>::unpack(&account.data)
+        .expect("мінт має читатися")
+        .get_variable_len_extension::<TokenMetadata>()
+        .expect("TokenMetadata")
+}
+
+pub fn metadata_address_of(account: &Account) -> Option<Pubkey> {
+    let state = StateWithExtensions::<Mint>::unpack(&account.data).expect("мінт має читатися");
+    let pointer = state
+        .get_extension::<MetadataPointer>()
+        .expect("MetadataPointer");
+    Option::from(pointer.metadata_address)
 }
 
 /// Програма хука з розширення мінта — `None`, якщо розширення немає або воно

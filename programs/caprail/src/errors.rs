@@ -25,6 +25,12 @@ pub enum CaprailError {
     RofrNotSupported,
     #[msg("admin and compliance officer must be two different, non-zero keys")]
     InvalidRoles,
-    #[msg("company name must be 1..=32 bytes of UTF-8")]
+    #[msg("name must be 1..=32 bytes of UTF-8")]
     InvalidName,
+    #[msg("token symbol must be 1..=10 bytes and uri at most 200 bytes of UTF-8")]
+    InvalidMetadata,
+    #[msg("total supply must be positive and decimals at most 9")]
+    InvalidSupply,
+    #[msg("policy values are out of range")]
+    InvalidPolicy,
 }

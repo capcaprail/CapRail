@@ -30,7 +30,7 @@ pub struct CreateCompany<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<CreateCompany>, args: CreateCompanyArgs) -> Result<()> {
+pub fn create_company_handler(ctx: Context<CreateCompany>, args: CreateCompanyArgs) -> Result<()> {
     let name = args.name.as_bytes();
     require!(
         !name.is_empty() && name.len() <= Company::NAME_LEN,
