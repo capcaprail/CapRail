@@ -2,18 +2,16 @@
 //! `TransferHook` доводить переказ до `caprail`, що годинник наш, і що ATA
 //! стенду — та сама адреса, яку виведе програма.
 //!
-//! Це не тести правила — правила ще немає. Коли з'явиться `execute` (US1),
-//! `hook_mint_transfer_reaches_caprail` перестане бути правдою і його замінять
-//! тести хука; решта лишається.
+//! Це не тести правила: саме правило доводить `hook_admission.rs`. Тут —
+//! межа «наш код починається після цього рядка»: переказ без акаунта програми
+//! падає ще в Token-2022.
 
 mod common;
 
-use anchor_lang::error::ErrorCode;
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::program_pack::Pack;
 use anchor_spl::token_2022::spl_token_2022;
 use common::*;
-use solana_instruction::AccountMeta;
 
 const SUPPLY: u64 = 1_000;
 
@@ -56,57 +54,6 @@ fn token_2022_moves_balance_on_a_plain_mint() {
     assert_eq!(token_amount(&result, &destination), 100);
 }
 
-/// Сенс стенду: Token-2022 бачить `TransferHook` на мінті і робить CPI в
-/// `caprail`. Програма поки порожня, тож Anchor відповідає своїм кодом «немає
-/// такої інструкції» — і саме він виринає як результат переказу. Це доказ, що
-/// шлях «переказ → хук → наша програма» пройдено до кінця.
-#[test]
-fn hook_mint_transfer_reaches_caprail() {
-    let mollusk = mollusk();
-    let authority = Pubkey::new_unique();
-    let holder = Pubkey::new_unique();
-    let recipient = Pubkey::new_unique();
-    let mint = Pubkey::new_unique();
-    let source = ata(&holder, &mint);
-    let destination = ata(&recipient, &mint);
-
-    let mint_account = hook_mint(&mollusk, &authority, SUPPLY, DECIMALS);
-    assert_eq!(hook_program_of(&mint_account), Some(caprail::ID));
-
-    let (program_key, program_account) = caprail_program();
-    let result = mollusk.process_instruction(
-        &transfer_checked(
-            &mint,
-            &source,
-            &destination,
-            &holder,
-            100,
-            DECIMALS,
-            &[AccountMeta::new_readonly(program_key, false)],
-        ),
-        &[
-            (mint, mint_account),
-            (source, hook_token_account(&mollusk, &mint, &holder, SUPPLY)),
-            (
-                destination,
-                hook_token_account(&mollusk, &mint, &recipient, 0),
-            ),
-            (holder, funded_wallet()),
-            (program_key, program_account),
-        ],
-    );
-
-    assert_eq!(
-        custom_error_code(&result),
-        Some(anchor_code(ErrorCode::InstructionFallbackNotFound)),
-        "{:?}",
-        result.program_result
-    );
-    // Відкат — увесь: у відхиленого переказу баланси не рухаються.
-    assert_eq!(token_amount(&result, &source), SUPPLY);
-    assert_eq!(token_amount(&result, &destination), 0);
-}
-
 /// Той самий переказ без акаунта програми в інструкції має впасти ще в
 /// Token-2022, а не дійти до нас: без нього CPI нікуди робити. Тест тримає
 /// межу «наш код починається після цього рядка».
@@ -134,12 +81,11 @@ fn hook_mint_transfer_without_the_program_account_fails_before_caprail() {
     );
 
     assert!(!is_success(&result));
-    assert_ne!(
-        custom_error_code(&result),
-        Some(anchor_code(ErrorCode::InstructionFallbackNotFound)),
-        "{:?}",
-        result.program_result
-    );
+    // «До нас» — буквально: у логах немає виклику програми.
+    let invoked_caprail = take_logs(&mollusk)
+        .iter()
+        .any(|line| line.contains("invoke") && line.contains(&caprail::ID.to_string()));
+    assert!(!invoked_caprail, "{:?}", result.program_result);
 }
 
 #[test]

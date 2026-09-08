@@ -14,6 +14,7 @@ pub mod instructions;
 pub mod state;
 
 pub use errors::CaprailError;
+use hook::*;
 use instructions::*;
 use state::TransferPolicy;
 
@@ -55,5 +56,12 @@ pub mod caprail {
         compliance_officer: Pubkey,
     ) -> Result<()> {
         instructions::set_roles_handler(ctx, admin, compliance_officer)
+    }
+
+    // Хук переказу. Викликає Token-2022 з кожного `transfer_checked` мінта з
+    // хуком; дискримінатор — інтерфейсу хука, не Anchor.
+    #[instruction(discriminator = hook::EXECUTE_DISCRIMINATOR)]
+    pub fn execute(ctx: Context<Execute>, amount: u64) -> Result<()> {
+        hook::execute_handler(ctx, amount)
     }
 }

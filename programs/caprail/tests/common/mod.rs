@@ -417,9 +417,14 @@ pub fn is_success(result: &InstructionResult) -> bool {
 // ── Події ────────────────────────────────────────────────────────────────────
 
 /// Логи, накопичені з моменту створення стенду (або останнього `take_logs`).
+///
+/// Скидається ВЕСЬ збирач, не лише вектор повідомлень: ліміт у нього — 10 000
+/// байтів на життя збирача, і `mem::take(messages)` лічильника не обнуляє.
+/// Після ~14 переказів події мовчки зникали б, а набір SC-002 бачив би «0 подій»
+/// на цілком дозволеному переказі.
 pub fn take_logs(mollusk: &Mollusk) -> Vec<String> {
     let logger = mollusk.logger.as_ref().expect("стенд створює збирач логів");
-    std::mem::take(&mut logger.borrow_mut().messages)
+    std::mem::take(&mut *logger.borrow_mut()).messages
 }
 
 /// Події з логів: `emit!` пише `Program data: <base64>`, де перші 8 байтів —

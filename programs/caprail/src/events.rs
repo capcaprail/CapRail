@@ -48,6 +48,25 @@ pub struct RolesSet {
     pub set_at: i64,
 }
 
+// Емітить хук `execute` на кожному дозволеному переказі — і з `distribute`,
+// і зі стороннього гаманця: інакше прямі перекази між інвесторами не потрапили
+// б у журнал (FR-008). Гаманці обох сторін тут, а не лише токен-рахунки, щоб
+// worker не дочитував акаунти з RPC; `policy_version` — яка політика пропустила.
+#[event]
+pub struct TransferAllowed {
+    pub company: Pubkey,
+    pub mint: Pubkey,
+    pub source: Pubkey,
+    pub destination: Pubkey,
+    pub source_owner: Pubkey,
+    pub destination_owner: Pubkey,
+    pub amount: u64,
+    // Джерело частки для cap table: розподіл із казначейства чи переказ між
+    // держателями.
+    pub from_treasury: bool,
+    pub policy_version: u32,
+}
+
 // Реєстр інвесторів індекс веде лише з цієї події: і поточний стан
 // (`investors`), і історію (`investor_status_events`) — звідси ж `updated_by`.
 #[event]

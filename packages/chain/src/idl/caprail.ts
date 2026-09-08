@@ -267,6 +267,57 @@ export type Caprail = {
       ]
     },
     {
+      "name": "execute",
+      "discriminator": [
+        105,
+        37,
+        101,
+        197,
+        75,
+        251,
+        102,
+        26
+      ],
+      "accounts": [
+        {
+          "name": "source"
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "destination"
+        },
+        {
+          "name": "owner"
+        },
+        {
+          "name": "extraAccountMetaList"
+        },
+        {
+          "name": "tokenConfig"
+        },
+        {
+          "name": "investorRecord"
+        },
+        {
+          "name": "grant"
+        },
+        {
+          "name": "transferPermit"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "setInvestorStatus",
       "discriminator": [
         191,
@@ -526,6 +577,19 @@ export type Caprail = {
         78,
         147,
         172
+      ]
+    },
+    {
+      "name": "transferAllowed",
+      "discriminator": [
+        20,
+        15,
+        112,
+        173,
+        98,
+        152,
+        138,
+        211
       ]
     }
   ],
@@ -1028,6 +1092,50 @@ export type Caprail = {
                 "name": "transferPolicy"
               }
             }
+          },
+          {
+            "name": "policyVersion",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "transferAllowed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "company",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "source",
+            "type": "pubkey"
+          },
+          {
+            "name": "destination",
+            "type": "pubkey"
+          },
+          {
+            "name": "sourceOwner",
+            "type": "pubkey"
+          },
+          {
+            "name": "destinationOwner",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "fromTreasury",
+            "type": "bool"
           },
           {
             "name": "policyVersion",
@@ -1317,6 +1425,57 @@ export const IDL: Caprail = {
       ]
     },
     {
+      "name": "execute",
+      "discriminator": [
+        105,
+        37,
+        101,
+        197,
+        75,
+        251,
+        102,
+        26
+      ],
+      "accounts": [
+        {
+          "name": "source"
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "destination"
+        },
+        {
+          "name": "owner"
+        },
+        {
+          "name": "extraAccountMetaList"
+        },
+        {
+          "name": "tokenConfig"
+        },
+        {
+          "name": "investorRecord"
+        },
+        {
+          "name": "grant"
+        },
+        {
+          "name": "transferPermit"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "setInvestorStatus",
       "discriminator": [
         191,
@@ -1576,6 +1735,19 @@ export const IDL: Caprail = {
         78,
         147,
         172
+      ]
+    },
+    {
+      "name": "transferAllowed",
+      "discriminator": [
+        20,
+        15,
+        112,
+        173,
+        98,
+        152,
+        138,
+        211
       ]
     }
   ],
@@ -2078,6 +2250,50 @@ export const IDL: Caprail = {
                 "name": "transferPolicy"
               }
             }
+          },
+          {
+            "name": "policyVersion",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "transferAllowed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "company",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "source",
+            "type": "pubkey"
+          },
+          {
+            "name": "destination",
+            "type": "pubkey"
+          },
+          {
+            "name": "sourceOwner",
+            "type": "pubkey"
+          },
+          {
+            "name": "destinationOwner",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "fromTreasury",
+            "type": "bool"
           },
           {
             "name": "policyVersion",
