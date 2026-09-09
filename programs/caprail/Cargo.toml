@@ -52,7 +52,6 @@ spl-discriminator.workspace = true
 # Хук викликається токен-програмою, а не нашим кодом: без справжнього рантайму
 # і ELF Token-2022 жоден тест не доходить до перевірки правила.
 mollusk-svm.workspace = true
-mollusk-svm-bencher.workspace = true
 mollusk-svm-programs-token.workspace = true
 solana-account.workspace = true
 solana-instruction.workspace = true

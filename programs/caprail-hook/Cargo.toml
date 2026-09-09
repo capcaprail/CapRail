@@ -38,6 +38,9 @@ spl-discriminator.workspace = true
 
 [dev-dependencies]
 mollusk-svm.workspace = true
+# CU-гейт хука (`tests/hook_cu.rs`) — тут, бо хук і є тим, що стережуть;
+# таблиця бенчера йде в target/benches.
+mollusk-svm-bencher.workspace = true
 mollusk-svm-programs-token.workspace = true
 solana-account.workspace = true
 solana-instruction.workspace = true

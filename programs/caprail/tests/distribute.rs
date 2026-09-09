@@ -204,6 +204,15 @@ fn admin_distributes_to_an_admitted_investor_and_creates_the_account() {
     assert_eq!(token_amount(&result, &world.investor_ata), AMOUNT);
     assert_eq!(token_amount(&result, &world.treasury), SUPPLY - AMOUNT);
 
+    // Найважчий шлях розподілу — зі створенням рахунку — у бюджеті інструкції
+    // (T023); число йде в таблицю M1.
+    let cu = result.compute_units_consumed;
+    assert!(
+        cu <= CU_LIMIT,
+        "distribute коштує {cu} CU при бюджеті {CU_LIMIT}"
+    );
+    println!("distribute зі створенням ATA: {cu} CU із {CU_LIMIT}");
+
     let events = allowed(&mollusk);
     assert_eq!(
         events.len(),

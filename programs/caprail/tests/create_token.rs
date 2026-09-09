@@ -136,6 +136,15 @@ fn mints_the_whole_supply_to_the_treasury_and_attaches_the_policy() {
     let result = create(&mollusk, &setup, args());
     assert!(is_success(&result), "{:?}", result.program_result);
 
+    // Найважча інструкція `caprail` (мінт із трьома розширеннями, метадані,
+    // казначейство, CPI в хук) — у бюджеті інструкції (T023).
+    let cu = result.compute_units_consumed;
+    assert!(
+        cu <= CU_LIMIT,
+        "create_token коштує {cu} CU при бюджеті {CU_LIMIT}"
+    );
+    println!("create_token: {cu} CU із {CU_LIMIT}");
+
     // Мінт: розширення, знаки, увесь випуск.
     let mint = account_of(&result, &setup.mint);
     assert_eq!(mint.owner, spl_token_2022::ID);

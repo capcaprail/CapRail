@@ -458,3 +458,27 @@ pub fn events<T: Discriminator + AnchorDeserialize>(logs: &[String]) -> Vec<T> {
         })
         .collect()
 }
+
+// ── Бюджет CU ────────────────────────────────────────────────────────────────
+
+/// Стеля обчислень на одну інструкцію, з якою транзакція йде в мережу без
+/// `SetComputeUnitLimit`. Понад неї переказ не «дорожчий» — він не проходить.
+pub const CU_LIMIT: u64 = 200_000;
+
+/// Базова комісія мережі за підпис (Agave, `lamports_per_signature`). Для
+/// SC-010 це вся ціна комплаєнтного переказу, коли рахунок одержувача вже є:
+/// пріоритетна комісія на 50 тис. CU — частки лампорта.
+pub const LAMPORTS_PER_SIGNATURE: u64 = 5_000;
+
+/// Скільки CU спалила сама програма всередині інструкції — з рядка
+/// `Program <id> consumed N of M compute units`, який рантайм пише на виході
+/// з кожного (у тому числі CPI-) виклику. `compute_units_consumed` результату
+/// рахує всю інструкцію разом із Token-2022, а стерегти треба саме хук.
+pub fn consumed_by(logs: &[String], program: &Pubkey) -> Option<u64> {
+    let prefix = format!("Program {program} consumed ");
+    logs.iter()
+        .filter_map(|line| line.strip_prefix(prefix.as_str()))
+        .filter_map(|rest| rest.split(' ').next())
+        .filter_map(|n| n.parse().ok())
+        .next_back()
+}
