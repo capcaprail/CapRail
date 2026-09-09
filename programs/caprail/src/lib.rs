@@ -1,9 +1,10 @@
 //! Ончейн-програма CapRail: одна на всіх емітентів, політика — дані в PDA.
 //!
 //! Правило допуску, vesting і ROFR виконує сам токен: mint компанії створюється
-//! з розширенням `TransferHook`, і Token-2022 викликає інструкцію `execute`
-//! на кожному `transfer_checked` — зі сторонніх гаманців і з CPI теж.
-//! Хук акаунтів не створює; відсутній PDA трактується за змістом (див. `hook`).
+//! з розширенням `TransferHook`, і Token-2022 викликає `execute` програми-хука
+//! `caprail-hook` на кожному `transfer_checked` — зі сторонніх гаманців і з CPI
+//! теж. Хук — окрема програма, бо ця не могла б переказувати власний хукнутий
+//! токен (реентерабельність); він лише читає стан звідси (див. `hook`).
 
 use anchor_lang::prelude::*;
 
@@ -14,7 +15,6 @@ pub mod instructions;
 pub mod state;
 
 pub use errors::CaprailError;
-use hook::*;
 use instructions::*;
 use state::TransferPolicy;
 
@@ -58,10 +58,9 @@ pub mod caprail {
         instructions::set_roles_handler(ctx, admin, compliance_officer)
     }
 
-    // Хук переказу. Викликає Token-2022 з кожного `transfer_checked` мінта з
-    // хуком; дискримінатор — інтерфейсу хука, не Anchor.
-    #[instruction(discriminator = hook::EXECUTE_DISCRIMINATOR)]
-    pub fn execute(ctx: Context<Execute>, amount: u64) -> Result<()> {
-        hook::execute_handler(ctx, amount)
+    // Розподіл частки з казначейства інвестору — через хук, як і будь-який
+    // інший переказ; журнал бере `TransferAllowed` звідти.
+    pub fn distribute(ctx: Context<Distribute>, amount: u64) -> Result<()> {
+        instructions::distribute_handler(ctx, amount)
     }
 }

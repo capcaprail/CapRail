@@ -1,5 +1,5 @@
 //! Тести самого стенду (T008): що Token-2022 виконується з ELF, що mint із
-//! `TransferHook` доводить переказ до `caprail`, що годинник наш, і що ATA
+//! `TransferHook` доводить переказ до `caprail-hook`, що годинник наш, і що ATA
 //! стенду — та сама адреса, яку виведе програма.
 //!
 //! Це не тести правила: саме правило доводить `hook_admission.rs`. Тут —
@@ -11,6 +11,7 @@ mod common;
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::program_pack::Pack;
 use anchor_spl::token_2022::spl_token_2022;
+use caprail::hook::HOOK_PROGRAM_ID;
 use common::*;
 
 const SUPPLY: u64 = 1_000;
@@ -81,11 +82,11 @@ fn hook_mint_transfer_without_the_program_account_fails_before_caprail() {
     );
 
     assert!(!is_success(&result));
-    // «До нас» — буквально: у логах немає виклику програми.
-    let invoked_caprail = take_logs(&mollusk)
+    // «До нас» — буквально: у логах немає виклику програми-хука.
+    let invoked_hook = take_logs(&mollusk)
         .iter()
-        .any(|line| line.contains("invoke") && line.contains(&caprail::ID.to_string()));
-    assert!(!invoked_caprail, "{:?}", result.program_result);
+        .any(|line| line.contains("invoke") && line.contains(&HOOK_PROGRAM_ID.to_string()));
+    assert!(!invoked_hook, "{:?}", result.program_result);
 }
 
 #[test]

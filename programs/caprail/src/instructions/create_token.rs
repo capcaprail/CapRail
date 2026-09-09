@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::program::invoke_signed;
 use anchor_lang::system_program::{transfer, Transfer};
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token_2022_extensions::spl_token_metadata_interface::state::TokenMetadata;
@@ -7,12 +8,10 @@ use anchor_spl::token_interface::{
     Mint, MintTo, SetAuthority, TokenAccount, TokenInterface, TokenMetadataInitialize,
 };
 use spl_pod::optional_keys::OptionalNonZeroPubkey;
-use spl_tlv_account_resolution::state::ExtraAccountMetaList;
-use spl_transfer_hook_interface::instruction::ExecuteInstruction;
 
 use crate::errors::CaprailError;
 use crate::events::TokenCreated;
-use crate::hook::{extra_account_metas, EXTRA_ACCOUNT_COUNT, EXTRA_ACCOUNT_METAS_SEED};
+use crate::hook::{initialize_list_instruction, EXTRA_ACCOUNT_METAS_SEED, HOOK_PROGRAM_ID};
 use crate::state::{Company, TokenConfig, TransferPolicy};
 
 pub const TOKEN_NAME_MAX: usize = 32;
@@ -77,7 +76,7 @@ pub struct CreateToken<'info> {
         mint::decimals = args.decimals,
         mint::authority = company,
         mint::token_program = token_program,
-        extensions::transfer_hook::program_id = crate::ID,
+        extensions::transfer_hook::program_id = HOOK_PROGRAM_ID,
         extensions::transfer_hook::authority = company,
         extensions::metadata_pointer::metadata_address = mint,
         extensions::metadata_pointer::authority = company,
@@ -101,18 +100,20 @@ pub struct CreateToken<'info> {
         associated_token::token_program = token_program,
     )]
     pub treasury: Box<InterfaceAccount<'info, TokenAccount>>,
-    // Адресу задають seeds, вміст пише `ExtraAccountMetaList::init` у хендлері.
-    // Рядок `CHECK` — однорядковий навмисне: другий рядок Anchor бере вже як
-    // документацію і кладе в публічний IDL.
-    /// CHECK: акаунт стандарту інтерфейсу хука, не Anchor-тип.
+    // Список акаунтів хука — PDA програми-хука: створює його вона сама через
+    // CPI нижче, тут лише адреса за її seeds. Рядок `CHECK` — однорядковий
+    // навмисне: другий рядок Anchor бере вже як документацію в публічний IDL.
+    /// CHECK: PDA хука, створюється CPI в `caprail-hook`
     #[account(
-        init,
-        payer = admin,
-        space = ExtraAccountMetaList::size_of(EXTRA_ACCOUNT_COUNT)?,
+        mut,
         seeds = [EXTRA_ACCOUNT_METAS_SEED, mint.key().as_ref()],
         bump,
+        seeds::program = HOOK_PROGRAM_ID,
     )]
     pub extra_account_meta_list: UncheckedAccount<'info>,
+    /// CHECK: адреса зафіксована
+    #[account(address = HOOK_PROGRAM_ID)]
+    pub hook_program: UncheckedAccount<'info>,
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
@@ -175,6 +176,27 @@ pub fn create_token_handler(ctx: Context<CreateToken>, args: CreateTokenArgs) ->
         args.uri,
     )?;
 
+    // Список додаткових акаунтів хука — один раз і на весь час життя токена
+    // (див. `hook::extra_account_metas`). Пише його програма-хук під своїм
+    // PDA; право на це дає підпис mint authority, тому виклик іде до того, як
+    // право емісії буде відкликане нижче.
+    invoke_signed(
+        &initialize_list_instruction(
+            ctx.accounts.admin.key,
+            mint.key,
+            &company_key,
+            ctx.accounts.extra_account_meta_list.key,
+        ),
+        &[
+            ctx.accounts.admin.to_account_info(),
+            mint.clone(),
+            company.clone(),
+            ctx.accounts.extra_account_meta_list.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+        ],
+        signer,
+    )?;
+
     // Уся емісія — один раз і сюди (FR-019). Хук на `mint_to` не викликається,
     // тож допуск казначейства не перевіряється й перевірятись не має.
     mint_to(
@@ -203,13 +225,6 @@ pub fn create_token_handler(ctx: Context<CreateToken>, args: CreateTokenArgs) ->
         ),
         AuthorityType::MintTokens,
         None,
-    )?;
-
-    // Список додаткових акаунтів пишеться один раз і на весь час життя токена
-    // (див. `hook::extra_account_metas`).
-    ExtraAccountMetaList::init::<ExecuteInstruction>(
-        &mut ctx.accounts.extra_account_meta_list.try_borrow_mut_data()?,
-        &extra_account_metas()?,
     )?;
 
     let config = &mut ctx.accounts.token_config;

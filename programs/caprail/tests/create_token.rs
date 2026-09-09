@@ -12,7 +12,7 @@ use anchor_lang::prelude::Pubkey;
 use anchor_lang::{InstructionData, ToAccountMetas};
 use anchor_spl::token_2022::spl_token_2022;
 use caprail::events::TokenCreated;
-use caprail::hook::EXTRA_ACCOUNT_COUNT;
+use caprail::hook::{EXTRA_ACCOUNT_COUNT, HOOK_PROGRAM_ID};
 use caprail::instructions::{CreateTokenArgs, DECIMALS_MAX, TOKEN_SYMBOL_MAX, TOKEN_URI_MAX};
 use caprail::state::{Company, TokenConfig, TransferPolicy, ROFR_WINDOW_MAX_SECS};
 use caprail::CaprailError;
@@ -77,7 +77,7 @@ fn setup(mollusk: &Mollusk, token_count: u32) -> Setup {
     let (mint, _) = TokenConfig::find_mint_address(&company, token_count);
     let (token_config, _) = TokenConfig::find_address(&mint);
     let treasury = ata(&company, &mint);
-    let extra_metas = get_extra_account_metas_address(&mint, &caprail::ID);
+    let extra_metas = get_extra_account_metas_address(&mint, &HOOK_PROGRAM_ID);
 
     Setup {
         admin,
@@ -96,6 +96,7 @@ fn setup(mollusk: &Mollusk, token_count: u32) -> Setup {
             empty(token_config),
             empty(treasury),
             empty(extra_metas),
+            hook_program(),
             token_program(),
             ata_program(),
             system_program(),
@@ -113,6 +114,7 @@ fn instruction(setup: &Setup, args: CreateTokenArgs) -> Instruction {
             token_config: setup.token_config,
             treasury: setup.treasury,
             extra_account_meta_list: setup.extra_metas,
+            hook_program: HOOK_PROGRAM_ID,
             token_program: spl_token_2022::ID,
             associated_token_program: anchor_spl::associated_token::ID,
             system_program: anchor_lang::system_program::ID,
@@ -137,7 +139,7 @@ fn mints_the_whole_supply_to_the_treasury_and_attaches_the_policy() {
     // Мінт: розширення, знаки, увесь випуск.
     let mint = account_of(&result, &setup.mint);
     assert_eq!(mint.owner, spl_token_2022::ID);
-    assert_eq!(hook_program_of(mint), Some(caprail::ID));
+    assert_eq!(hook_program_of(mint), Some(HOOK_PROGRAM_ID));
     let base = mint_base(mint);
     assert_eq!(base.decimals, DECIMALS);
     assert_eq!(base.supply, SUPPLY);
@@ -157,10 +159,11 @@ fn mints_the_whole_supply_to_the_treasury_and_attaches_the_policy() {
     assert_eq!(treasury.owner, spl_token_2022::ID);
     assert_eq!(token_amount(&result, &setup.treasury), SUPPLY);
 
-    // Список додаткових акаунтів існує вже після створення токена: без нього
-    // перший же переказ не зміг би зібрати акаунти для хука.
+    // Список додаткових акаунтів існує вже після створення токена (його за
+    // CPI створила програма-хук, тож і належить він їй): без нього перший же
+    // переказ не зміг би зібрати акаунти для хука.
     let metas = account_of(&result, &setup.extra_metas);
-    assert_eq!(metas.owner, caprail::ID);
+    assert_eq!(metas.owner, HOOK_PROGRAM_ID);
     assert_eq!(
         metas.data.len(),
         ExtraAccountMetaList::size_of(EXTRA_ACCOUNT_COUNT).expect("розмір списку")
@@ -246,7 +249,7 @@ fn rejects_a_mint_pda_that_does_not_match_the_token_count() {
     setup.mint = wrong_mint;
     setup.token_config = wrong_config;
     setup.treasury = ata(&setup.company, &wrong_mint);
-    setup.extra_metas = get_extra_account_metas_address(&wrong_mint, &caprail::ID);
+    setup.extra_metas = get_extra_account_metas_address(&wrong_mint, &HOOK_PROGRAM_ID);
     setup.accounts[2] = empty(wrong_mint);
     setup.accounts[3] = empty(wrong_config);
     setup.accounts[4] = empty(setup.treasury);

@@ -240,8 +240,49 @@ export type Caprail = {
                 "kind": "account",
                 "path": "mint"
               }
-            ]
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                77,
+                182,
+                59,
+                145,
+                190,
+                83,
+                0,
+                211,
+                137,
+                220,
+                172,
+                143,
+                196,
+                212,
+                253,
+                126,
+                255,
+                160,
+                228,
+                76,
+                124,
+                78,
+                8,
+                173,
+                213,
+                4,
+                228,
+                218,
+                33,
+                32,
+                6,
+                183
+              ]
+            }
           }
+        },
+        {
+          "name": "hookProgram",
+          "address": "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi"
         },
         {
           "name": "tokenProgram"
@@ -267,20 +308,34 @@ export type Caprail = {
       ]
     },
     {
-      "name": "execute",
+      "name": "distribute",
       "discriminator": [
-        105,
-        37,
-        101,
-        197,
-        75,
-        251,
-        102,
-        26
+        191,
+        44,
+        223,
+        207,
+        164,
+        236,
+        126,
+        61
       ],
       "accounts": [
         {
-          "name": "source"
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "company"
+          ]
+        },
+        {
+          "name": "company",
+          "relations": [
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "tokenConfig"
         },
         {
           "name": "mint",
@@ -289,16 +344,128 @@ export type Caprail = {
           ]
         },
         {
-          "name": "destination"
+          "name": "treasury",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "company"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
-          "name": "owner"
+          "name": "investor"
+        },
+        {
+          "name": "investorTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "investor"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
           "name": "extraAccountMetaList"
         },
         {
-          "name": "tokenConfig"
+          "name": "stateProgram",
+          "address": "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g"
         },
         {
           "name": "investorRecord"
@@ -308,6 +475,21 @@ export type Caprail = {
         },
         {
           "name": "transferPermit"
+        },
+        {
+          "name": "hookProgram",
+          "address": "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -668,6 +850,11 @@ export type Caprail = {
       "code": 6014,
       "name": "invalidExpiry",
       "msg": "an approved investor needs an expiry in the future"
+    },
+    {
+      "code": 6015,
+      "name": "invalidAmount",
+      "msg": "amount must be positive"
     }
   ],
   "types": [
@@ -1398,8 +1585,49 @@ export const IDL: Caprail = {
                 "kind": "account",
                 "path": "mint"
               }
-            ]
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                77,
+                182,
+                59,
+                145,
+                190,
+                83,
+                0,
+                211,
+                137,
+                220,
+                172,
+                143,
+                196,
+                212,
+                253,
+                126,
+                255,
+                160,
+                228,
+                76,
+                124,
+                78,
+                8,
+                173,
+                213,
+                4,
+                228,
+                218,
+                33,
+                32,
+                6,
+                183
+              ]
+            }
           }
+        },
+        {
+          "name": "hookProgram",
+          "address": "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi"
         },
         {
           "name": "tokenProgram"
@@ -1425,20 +1653,34 @@ export const IDL: Caprail = {
       ]
     },
     {
-      "name": "execute",
+      "name": "distribute",
       "discriminator": [
-        105,
-        37,
-        101,
-        197,
-        75,
-        251,
-        102,
-        26
+        191,
+        44,
+        223,
+        207,
+        164,
+        236,
+        126,
+        61
       ],
       "accounts": [
         {
-          "name": "source"
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "company"
+          ]
+        },
+        {
+          "name": "company",
+          "relations": [
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "tokenConfig"
         },
         {
           "name": "mint",
@@ -1447,16 +1689,128 @@ export const IDL: Caprail = {
           ]
         },
         {
-          "name": "destination"
+          "name": "treasury",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "company"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
-          "name": "owner"
+          "name": "investor"
+        },
+        {
+          "name": "investorTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "investor"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
           "name": "extraAccountMetaList"
         },
         {
-          "name": "tokenConfig"
+          "name": "stateProgram",
+          "address": "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g"
         },
         {
           "name": "investorRecord"
@@ -1466,6 +1820,21 @@ export const IDL: Caprail = {
         },
         {
           "name": "transferPermit"
+        },
+        {
+          "name": "hookProgram",
+          "address": "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -1826,6 +2195,11 @@ export const IDL: Caprail = {
       "code": 6014,
       "name": "invalidExpiry",
       "msg": "an approved investor needs an expiry in the future"
+    },
+    {
+      "code": 6015,
+      "name": "invalidAmount",
+      "msg": "amount must be positive"
     }
   ],
   "types": [

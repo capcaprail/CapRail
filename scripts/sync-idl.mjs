@@ -12,7 +12,7 @@
 // `Program` перетворює його на `args.companyId`. На рантайм це не впливає, але
 // два джерела одного файлу дали б розбіжність на рівному місці.
 //
-//   node scripts/sync-idl.mjs          — перезаписати вендоровану копію
+//   node scripts/sync-idl.mjs          — перезаписати вендоровані копії
 //   node scripts/sync-idl.mjs --check  — впасти, якщо копія розійшлася зі збіркою
 //
 // `--check` мовчки пропускає перевірку, коли `target/` немає: гейт має бути
@@ -22,10 +22,13 @@ import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const IDL_JSON = join(root, 'target', 'idl', 'caprail.json')
-const IDL_TYPES = join(root, 'target', 'types', 'caprail.ts')
-const OUT = join(root, 'packages', 'chain', 'src', 'idl', 'caprail.ts')
-const TYPE_PREFIX = 'export type Caprail = '
+
+// Дві програми — два IDL. Хук клієнт не викликає напряму, але його адреса й
+// розкладка `execute` потрібні білдерам (`transferWithHook`) і демо.
+const PROGRAMS = [
+  { name: 'caprail', type: 'Caprail', out: 'caprail.ts' },
+  { name: 'caprail_hook', type: 'CaprailHook', out: 'caprailHook.ts' },
+]
 
 const HEADER = `// ЗГЕНЕРОВАНО \`pnpm idl:sync\` з target/types. Руками не редагувати.
 //
@@ -46,13 +49,24 @@ function fail(message) {
   process.exit(1)
 }
 
-function generate() {
-  const declaration = readFileSync(IDL_TYPES, 'utf8').replace(/\r\n/g, '\n')
-  const opening = declaration.indexOf(TYPE_PREFIX)
-  if (opening === -1) fail(`${relative(root, IDL_TYPES)} не оголошує тип Caprail`)
+function paths({ name, type, out }) {
+  return {
+    json: join(root, 'target', 'idl', `${name}.json`),
+    types: join(root, 'target', 'types', `${name}.ts`),
+    out: join(root, 'packages', 'chain', 'src', 'idl', out),
+    prefix: `export type ${type} = `,
+    type,
+  }
+}
+
+function generate(program) {
+  const { json, types, prefix, type } = paths(program)
+  const declaration = readFileSync(types, 'utf8').replace(/\r\n/g, '\n')
+  const opening = declaration.indexOf(prefix)
+  if (opening === -1) fail(`${relative(root, types)} не оголошує тип ${type}`)
 
   const body = declaration
-    .slice(opening + TYPE_PREFIX.length)
+    .slice(opening + prefix.length)
     .trim()
     .replace(/;$/, '')
 
@@ -65,34 +79,40 @@ function generate() {
 
   // Два файли з однієї збірки. Розбіжність означає, що `target/` зібраний
   // наполовину, і вендорувати з нього не можна нічого.
-  const raw = JSON.parse(readFileSync(IDL_JSON, 'utf8'))
+  const raw = JSON.parse(readFileSync(json, 'utf8'))
   if (parsed.address !== raw.address || parsed.instructions.length !== raw.instructions.length) {
-    fail('target/idl і target/types розійшлися — перезібрати програму')
+    fail(`target/idl і target/types для ${type} розійшлися — перезібрати програму`)
   }
 
-  return `${HEADER}\n${TYPE_PREFIX}${body}\n\nexport const IDL: Caprail = ${body}\n`
+  return `${HEADER}\n${prefix}${body}\n\nexport const IDL: ${type} = ${body}\n`
 }
 
-if (!existsSync(IDL_JSON) || !existsSync(IDL_TYPES)) {
+for (const program of PROGRAMS) {
+  const { json, types, out } = paths(program)
+  if (!existsSync(json) || !existsSync(types)) {
+    if (checkOnly) {
+      process.stdout.write('sync-idl: target/ немає — звіряти нема з чим, пропускаю\n')
+      process.exit(0)
+    }
+    fail(`немає ${relative(root, json)} — спершу зібрати IDL (scripts/wsl-build.sh idl)`)
+  }
+
+  const generated = generate(program)
+
   if (checkOnly) {
-    process.stdout.write('sync-idl: target/ немає — звіряти нема з чим, пропускаю\n')
-    process.exit(0)
+    if (!existsSync(out)) fail(`немає ${relative(root, out)} — запустити \`pnpm idl:sync\``)
+    const current = readFileSync(out, 'utf8').replace(/\r\n/g, '\n')
+    if (current !== generated) {
+      fail(`${relative(root, out)} розійшовся зі збіркою — запустити \`pnpm idl:sync\``)
+    }
+    continue
   }
-  fail(`немає ${relative(root, IDL_JSON)} — спершу зібрати IDL (scripts/wsl-build.sh idl)`)
-}
 
-const generated = generate()
+  mkdirSync(dirname(out), { recursive: true })
+  writeFileSync(out, generated, 'utf8')
+  process.stdout.write(`sync-idl: записано ${relative(root, out)}\n`)
+}
 
 if (checkOnly) {
-  if (!existsSync(OUT)) fail(`немає ${relative(root, OUT)} — запустити \`pnpm idl:sync\``)
-  const current = readFileSync(OUT, 'utf8').replace(/\r\n/g, '\n')
-  if (current !== generated) {
-    fail(`${relative(root, OUT)} розійшовся зі збіркою — запустити \`pnpm idl:sync\``)
-  }
-  process.stdout.write('sync-idl: вендорований IDL збігається зі збіркою\n')
-  process.exit(0)
+  process.stdout.write('sync-idl: вендоровані IDL збігаються зі збіркою\n')
 }
-
-mkdirSync(dirname(OUT), { recursive: true })
-writeFileSync(OUT, generated, 'utf8')
-process.stdout.write(`sync-idl: записано ${relative(root, OUT)}\n`)

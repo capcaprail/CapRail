@@ -40,24 +40,31 @@ jobs:
           sh -c "$(curl -sSfL https://release.anza.xyz/v3.1.10/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
 
-      - name: BPF-артефакт (SBPFv0)
-        run: cargo-build-sbf --manifest-path programs/caprail/Cargo.toml 2>&1 | tee .build.log
+      # Дві програми: `caprail` (стан і дії) і `caprail-hook` (правило) — хук
+      # окремий, бо програма-хук не може сама переказувати свій мінт.
+      - name: BPF-артефакти (SBPFv0)
+        run: |
+          for program in caprail caprail-hook; do
+            cargo-build-sbf --manifest-path "programs/$program/Cargo.toml" 2>&1 | tee -a .build.log
+          done
 
       # Ті самі дві перевірки, що й у scripts/wsl-build.sh: заголовок ELF і
       # рядок про переповнення кадру, який збірка пише попередженням, не помилкою.
-      - name: Артефакт — v0 і кадр у межах 4 КіБ
+      - name: Артефакти — v0 і кадр у межах 4 КіБ
         run: |
-          flags="$(readelf -h target/deploy/caprail.so | awk '/Flags:/ {print $2}')"
-          if [ "$flags" != "0x0" ]; then
-            echo "::error::caprail.so має e_flags=$flags, очікувалось 0x0 (SBPFv0)"
-            exit 1
-          fi
+          for so in target/deploy/caprail.so target/deploy/caprail_hook.so; do
+            flags="$(readelf -h "$so" | awk '/Flags:/ {print $2}')"
+            if [ "$flags" != "0x0" ]; then
+              echo "::error::$so має e_flags=$flags, очікувалось 0x0 (SBPFv0)"
+              exit 1
+            fi
+            echo "$so: $(stat -c %s "$so") байтів, SBPFv0"
+          done
           if grep -qE 'overwrites values in the frame|exceeded max offset' .build.log; then
             echo "::error::переповнення кадру стека у збірці"
             grep -E 'overwrites values in the frame|exceeded max offset' .build.log | head -5
             exit 1
           fi
-          echo "caprail.so: $(stat -c %s target/deploy/caprail.so) байтів, SBPFv0"
 
       - name: Формат
         run: cargo fmt --all -- --check

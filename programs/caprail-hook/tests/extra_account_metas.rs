@@ -1,15 +1,20 @@
 //! `ExtraAccountMetaList` (T018): чотири seed-конфіги, які Token-2022 резолвить
-//! на кожному переказі.
+//! на кожному переказі, і контракт `caprail` ↔ `caprail-hook` на його створення.
 //!
 //! Тест резолвить їх тією самою бібліотекою, що й токен-програма
 //! (`spl-tlv-account-resolution`), і звіряє з адресами, які виводить решта
 //! програми. Помилка в `address_config` інакше знайшлася б аж на першому
 //! переказі — і виглядала б як «акаунта немає», тобто «не допущений».
 
+#[path = "../../caprail/tests/common/mod.rs"]
 mod common;
 
 use anchor_lang::prelude::Pubkey;
-use caprail::hook::{extra_account_metas, EXTRA_ACCOUNT_COUNT, EXTRA_ACCOUNT_METAS_SEED};
+use anchor_lang::{Discriminator, ToAccountMetas};
+use caprail::hook::{
+    extra_account_metas, find_extra_account_meta_list, initialize_list_instruction,
+    EXTRA_ACCOUNT_COUNT, EXTRA_ACCOUNT_METAS_SEED, HOOK_PROGRAM_ID, INITIALIZE_LIST_DISCRIMINATOR,
+};
 use caprail::state::{InvestorRecord, TokenConfig, GRANT_SEED, PERMIT_SEED};
 use common::*;
 use solana_account::Account;
@@ -36,7 +41,7 @@ impl ExecuteAccounts {
             mint,
             destination: ata(buyer, &mint),
             owner: *seller,
-            list: get_extra_account_metas_address(&mint, &caprail::ID),
+            list: get_extra_account_metas_address(&mint, &HOOK_PROGRAM_ID),
             source_data: hook_token_account(mollusk, &mint, seller, 100),
             destination_data: hook_token_account(mollusk, &mint, buyer, 0),
         }
@@ -52,13 +57,16 @@ impl ExecuteAccounts {
             )),
             3 => Some((&self.owner, None)),
             4 => Some((&self.list, None)),
+            // Перший додатковий — програма `caprail`, під нею виводяться PDA.
+            5 => Some((&caprail::ID, None)),
             _ => None,
         }
     }
 }
 
 /// Адреси беруться зі зрізів даних токен-акаунтів, тому резолюція має дати
-/// рівно ті PDA, які виводить програма за тими самими гаманцями.
+/// рівно ті PDA, які виводить програма за тими самими гаманцями, — і під
+/// `caprail`, а не під хуком, хоч резолвить їх Token-2022 з боку хука.
 #[test]
 fn resolves_to_the_pdas_the_program_derives() {
     let mollusk = mollusk();
@@ -69,6 +77,7 @@ fn resolves_to_the_pdas_the_program_derives() {
     assert_eq!(metas.len(), EXTRA_ACCOUNT_COUNT);
 
     let expected = [
+        caprail::ID,
         TokenConfig::find_address(&accounts.mint).0,
         InvestorRecord::find_address(&accounts.mint, &buyer).0,
         Pubkey::find_program_address(
@@ -81,7 +90,7 @@ fn resolves_to_the_pdas_the_program_derives() {
 
     for (meta, expected) in metas.iter().zip(expected) {
         let resolved = meta
-            .resolve(&[], &caprail::ID, |index| accounts.key_data(index))
+            .resolve(&[], &HOOK_PROGRAM_ID, |index| accounts.key_data(index))
             .expect("seed-конфіг має резолвитись");
         assert_eq!(resolved.pubkey, expected);
         // Хук тільки читає: жоден із цих акаунтів не підписує і не змінюється.
@@ -101,8 +110,8 @@ fn reads_the_recipient_for_admission_and_the_sender_for_vesting() {
     let accounts = ExecuteAccounts::new(&mollusk, &seller, &buyer);
     let metas = extra_account_metas().expect("список акаунтів хука");
 
-    let record = metas[1]
-        .resolve(&[], &caprail::ID, |index| accounts.key_data(index))
+    let record = metas[2]
+        .resolve(&[], &HOOK_PROGRAM_ID, |index| accounts.key_data(index))
         .expect("InvestorRecord")
         .pubkey;
     assert_eq!(
@@ -114,8 +123,8 @@ fn reads_the_recipient_for_admission_and_the_sender_for_vesting() {
         InvestorRecord::find_address(&accounts.mint, &seller).0
     );
 
-    let grant = metas[2]
-        .resolve(&[], &caprail::ID, |index| accounts.key_data(index))
+    let grant = metas[3]
+        .resolve(&[], &HOOK_PROGRAM_ID, |index| accounts.key_data(index))
         .expect("Grant")
         .pubkey;
     assert_eq!(
@@ -130,13 +139,46 @@ fn reads_the_recipient_for_admission_and_the_sender_for_vesting() {
 
 /// Наш літерал seed проти константи інтерфейсу, яка не публічна: якщо вони
 /// розійдуться, токен-програма шукатиме список за іншою адресою і хук не
-/// отримає жодного додаткового акаунта.
+/// отримає жодного додаткового акаунта. Список — PDA програми-хука, не `caprail`.
 #[test]
 fn extra_account_metas_pda_matches_the_interface() {
     let mint = Pubkey::new_unique();
+    let interface = get_extra_account_metas_address(&mint, &HOOK_PROGRAM_ID);
     assert_eq!(
-        Pubkey::find_program_address(&[EXTRA_ACCOUNT_METAS_SEED, mint.as_ref()], &caprail::ID).0,
-        get_extra_account_metas_address(&mint, &caprail::ID)
+        Pubkey::find_program_address(&[EXTRA_ACCOUNT_METAS_SEED, mint.as_ref()], &HOOK_PROGRAM_ID)
+            .0,
+        interface
+    );
+    assert_eq!(find_extra_account_meta_list(&mint).0, interface);
+}
+
+/// Контракт між програмами: `caprail` збирає інструкцію ініціалізації списку
+/// руками, за константами, бо залежність іде лише від хука до `caprail`.
+/// Дискримінатор і порядок акаунтів мають збігатися з тим, що згенерував Anchor тут.
+#[test]
+fn initialize_list_instruction_matches_the_generated_accounts() {
+    let payer = Pubkey::new_unique();
+    let mint = Pubkey::new_unique();
+    let authority = Pubkey::new_unique();
+    let list = find_extra_account_meta_list(&mint).0;
+
+    let manual = initialize_list_instruction(&payer, &mint, &authority, &list);
+    assert_eq!(manual.program_id, caprail_hook::ID);
+    assert_eq!(
+        manual.data,
+        caprail_hook::instruction::InitializeExtraAccountMetaList::DISCRIMINATOR
+    );
+    assert_eq!(manual.data, INITIALIZE_LIST_DISCRIMINATOR);
+    assert_eq!(
+        manual.accounts,
+        caprail_hook::accounts::InitializeExtraAccountMetaList {
+            payer,
+            mint,
+            authority,
+            extra_account_meta_list: list,
+            system_program: anchor_lang::system_program::ID,
+        }
+        .to_account_metas(None)
     );
 }
 
@@ -172,7 +214,7 @@ fn created_token_extra_metas() -> Vec<u8> {
     let (mint, _) = TokenConfig::find_mint_address(&company, 0);
     let (token_config, _) = TokenConfig::find_address(&mint);
     let treasury = ata(&company, &mint);
-    let list = get_extra_account_metas_address(&mint, &caprail::ID);
+    let list = get_extra_account_metas_address(&mint, &HOOK_PROGRAM_ID);
 
     let state = Company {
         company_id: 1,
@@ -191,6 +233,7 @@ fn created_token_extra_metas() -> Vec<u8> {
             token_config,
             treasury,
             extra_account_meta_list: list,
+            hook_program: HOOK_PROGRAM_ID,
             token_program: spl_token_2022::ID,
             associated_token_program: anchor_spl::associated_token::ID,
             system_program: anchor_lang::system_program::ID,
@@ -222,11 +265,14 @@ fn created_token_extra_metas() -> Vec<u8> {
             empty(token_config),
             empty(treasury),
             empty(list),
+            hook_program(),
             token_program(),
             ata_program(),
             system_program(),
         ],
     );
     assert!(is_success(&result), "{:?}", result.program_result);
+    // Список належить хуку — інакше Token-2022 його не прийме.
+    assert_eq!(account_of(&result, &list).owner, HOOK_PROGRAM_ID);
     account_of(&result, &list).data.clone()
 }

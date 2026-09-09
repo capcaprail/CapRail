@@ -20,10 +20,15 @@ export PATH="$HOME/.avm/bin:$HOME/.cargo/bin:$HOME/.local/share/solana/install/a
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOG="$ROOT/.build.log"
 CMD="${1:-build-sbf}"
+# Дві програми: `caprail` (стан і дії) і `caprail-hook` (правило). Хук окремий,
+# бо програма-хук не може сама переказувати свій мінт (реентерабельність).
+PROGRAMS=(caprail caprail-hook)
 SO="target/deploy/caprail.so"
-# Ключ програми — поза репозиторієм: за замовчуванням у домашній теці WSL,
-# інше місце — через змінну оточення.
+HOOK_SO="target/deploy/caprail_hook.so"
+# Ключі програм — поза репозиторієм: за замовчуванням у домашній теці WSL,
+# інше місце — через змінні оточення.
 KEYS="${CAPRAIL_PROGRAM_KEYPAIR:-$HOME/.config/caprail/caprail-keypair.json}"
+HOOK_KEYS="${CAPRAIL_HOOK_PROGRAM_KEYPAIR:-$HOME/.config/caprail/caprail-hook-keypair.json}"
 
 cd "$ROOT"
 
@@ -46,9 +51,12 @@ run() {
 # адрес). `anchor build` без нього згенерував би новий і мовчки розійшовся з
 # declare_id!, тому копія кладеться в target/deploy перед кожною збіркою.
 sync_keypair() {
+  mkdir -p target/deploy
   if [[ -f "$KEYS" ]]; then
-    mkdir -p target/deploy
     cp "$KEYS" target/deploy/caprail-keypair.json
+  fi
+  if [[ -f "$HOOK_KEYS" ]]; then
+    cp "$HOOK_KEYS" target/deploy/caprail_hook-keypair.json
   fi
 }
 
@@ -57,12 +65,14 @@ sync_keypair() {
 # він дає `Program is not deployed`, loader-v4 відмовляє на `invalid file
 # header`. Тому перевіряємо заголовок, а не вірю на слово команді збірки.
 check_v0() {
-  local flags
-  flags="$(readelf -h "$SO" | awk '/Flags:/ {print $2}')"
-  if [[ "$flags" != "0x0" ]]; then
-    echo "ПОМИЛКА: $SO має e_flags=$flags, очікувалось 0x0 (SBPFv0)"
-    exit 1
-  fi
+  local so flags
+  for so in "$SO" "$HOOK_SO"; do
+    flags="$(readelf -h "$so" | awk '/Flags:/ {print $2}')"
+    if [[ "$flags" != "0x0" ]]; then
+      echo "ПОМИЛКА: $so має e_flags=$flags, очікувалось 0x0 (SBPFv0)"
+      exit 1
+    fi
+  done
 }
 
 # Кадр `try_accounts` під v0 — жорсткий ліміт 4 КіБ, і збірка про це каже
@@ -87,17 +97,20 @@ echo
 
 case "$CMD" in
   build-sbf)
-    run cargo-build-sbf --manifest-path programs/caprail/Cargo.toml
+    for program in "${PROGRAMS[@]}"; do
+      run cargo-build-sbf --manifest-path "programs/$program/Cargo.toml"
+    done
     check_frame
     check_v0
     echo "OK — $SO: $(stat -c %s "$SO") байтів, SBPFv0"
+    echo "OK — $HOOK_SO: $(stat -c %s "$HOOK_SO") байтів, SBPFv0"
     ;;
   idl)
     # Лише заради target/idl/caprail.json; артефакт цієї команди в мережу не йде.
     sync_keypair
     run anchor build
-    echo "OK — IDL у target/idl/caprail.json"
-    echo "УВАГА: anchor build перезаписав $SO артефактом v3 — перед test/деплоєм: $0 build-sbf"
+    echo "OK — IDL у target/idl/{caprail,caprail_hook}.json"
+    echo "УВАГА: anchor build перезаписав $SO і $HOOK_SO артефактами v3 — перед test/деплоєм: $0 build-sbf"
     ;;
   build)
     # Порядок не довільний: anchor build пише свій v3-артефакт у той самий
@@ -119,8 +132,8 @@ case "$CMD" in
     ;;
   test)
     # Тести хука виконують сам .so, а не хостову збірку крейта.
-    if [[ ! -f "$SO" ]]; then
-      echo "немає $SO — спершу: $0 build-sbf" >&2
+    if [[ ! -f "$SO" || ! -f "$HOOK_SO" ]]; then
+      echo "немає $SO або $HOOK_SO — спершу: $0 build-sbf" >&2
       exit 1
     fi
     # Після `idl` тут лежить v3 — тести ганяли б байткод, який у мережу не йде.

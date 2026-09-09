@@ -8,9 +8,11 @@ skip-lint = false
 
 [programs.localnet]
 caprail = "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g"
+caprail_hook = "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi"
 
 [programs.devnet]
 caprail = "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g"
+caprail_hook = "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi"
 
 [registry]
 url = "https://api.apr.dev"

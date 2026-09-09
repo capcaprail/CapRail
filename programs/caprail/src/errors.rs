@@ -37,4 +37,6 @@ pub enum CaprailError {
     InvalidJurisdiction,
     #[msg("an approved investor needs an expiry in the future")]
     InvalidExpiry,
+    #[msg("amount must be positive")]
+    InvalidAmount,
 }

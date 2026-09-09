@@ -5,11 +5,14 @@
 //! «running 0 tests». Тека такого не робить, а `mod common;` знаходить її
 //! однаково.
 //!
-//! Стенд виконує зібраний `caprail.so`, а не хостову збірку крейта: перевірки
-//! Anchor (`init`, `seeds`, `has_one`, `owner`) живуть у згенерованому
-//! `try_accounts`, і тест на хендлер пройшов би повз рівно те, на що ми
-//! покладаємось. Поруч із ним — справжній ELF Token-2022: хук викликає
+//! Стенд виконує зібрані `caprail.so` і `caprail_hook.so`, а не хостову збірку
+//! крейтів: перевірки Anchor (`init`, `seeds`, `has_one`, `owner`) живуть у
+//! згенерованому `try_accounts`, і тест на хендлер пройшов би повз рівно те, на
+//! що ми покладаємось. Поруч із ними — справжній ELF Token-2022: хук викликає
 //! токен-програма, і без неї жоден тест не доходить до перевірки правила.
+//!
+//! Той самий файл підключають тести обох крейтів (`#[path]` у `caprail-hook`):
+//! стенд один, бо переказ через хук — це завжди обидві програми разом.
 //!
 //! Тут — тільки побудова стану й читання результату. Твердження лишаються в
 //! самих тестах разом зі своїми поясненнями.
@@ -44,6 +47,7 @@ use anchor_spl::token_2022::spl_token_2022::{self, instruction as token_instruct
 use anchor_spl::token_2022_extensions::spl_token_metadata_interface::state::TokenMetadata;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
+use caprail::hook::HOOK_PROGRAM_ID;
 use caprail::CaprailError;
 use mollusk_svm::program::{create_program_account_loader_v3, loader_keys::LOADER_V3};
 use mollusk_svm::result::{InstructionResult, ProgramResult};
@@ -75,11 +79,16 @@ const SLOTS_PER_2_SECONDS: i64 = 5;
 /// там `caprail.so` не знайде. Це той самий файл, який перевіряє `wsl-build.sh`
 /// (SBPFv0), — тести ганяють рівно те, що поїде в мережу.
 pub fn caprail_elf() -> Vec<u8> {
-    let path = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../target/deploy/caprail.so"
-    );
-    std::fs::read(path).unwrap_or_else(|err| {
+    elf("caprail.so")
+}
+
+pub fn caprail_hook_elf() -> Vec<u8> {
+    elf("caprail_hook.so")
+}
+
+fn elf(name: &str) -> Vec<u8> {
+    let path = format!("{}/../../target/deploy/{name}", env!("CARGO_MANIFEST_DIR"));
+    std::fs::read(&path).unwrap_or_else(|err| {
         panic!("немає {path} ({err}) — спершу: scripts/wsl-build.sh build-sbf")
     })
 }
@@ -87,6 +96,7 @@ pub fn caprail_elf() -> Vec<u8> {
 pub fn mollusk() -> Mollusk {
     let mut mollusk = Mollusk::default();
     mollusk.add_program_with_loader_and_elf(&caprail::ID, &LOADER_V3, &caprail_elf());
+    mollusk.add_program_with_loader_and_elf(&HOOK_PROGRAM_ID, &LOADER_V3, &caprail_hook_elf());
     token2022::add_program(&mut mollusk);
     associated_token::add_program(&mut mollusk);
     set_clock(&mut mollusk, GENESIS_SLOT, GENESIS_UNIX_TS);
@@ -149,10 +159,17 @@ pub fn ata_program() -> (Pubkey, Account) {
     associated_token::keyed_account()
 }
 
-/// Акаунт самої програми — у переказі з хуком він мусить бути серед акаунтів
-/// інструкції, інакше Token-2022 не має куди робити CPI.
 pub fn caprail_program() -> (Pubkey, Account) {
     (caprail::ID, create_program_account_loader_v3(&caprail::ID))
+}
+
+/// Акаунт програми-хука — у переказі з хуком він мусить бути серед акаунтів
+/// інструкції, інакше Token-2022 не має куди робити CPI.
+pub fn hook_program() -> (Pubkey, Account) {
+    (
+        HOOK_PROGRAM_ID,
+        create_program_account_loader_v3(&HOOK_PROGRAM_ID),
+    )
 }
 
 pub fn rent_exempt(mollusk: &Mollusk, data: Vec<u8>, owner: Pubkey) -> Account {
@@ -181,9 +198,9 @@ fn mint_state(mint_authority: &Pubkey, supply: u64, decimals: u8) -> Mint {
     }
 }
 
-/// Mint компанії: розширення `TransferHook` вказує на `caprail`. Це та сама
-/// форма, яку `create_token` збере в мережі, тож переказ через нього доходить
-/// до `execute` рівно так само.
+/// Mint компанії: розширення `TransferHook` вказує на `caprail-hook`. Це та
+/// сама форма, яку `create_token` збере в мережі, тож переказ через нього
+/// доходить до `execute` рівно так само.
 pub fn hook_mint(mollusk: &Mollusk, mint_authority: &Pubkey, supply: u64, decimals: u8) -> Account {
     let len = ExtensionType::try_calculate_account_len::<Mint>(&[ExtensionType::TransferHook])
         .expect("довжина мінта з TransferHook");
@@ -195,7 +212,8 @@ pub fn hook_mint(mollusk: &Mollusk, mint_authority: &Pubkey, supply: u64, decima
             .init_extension::<TransferHook>(true)
             .expect("TransferHook");
         hook.authority = OptionalNonZeroPubkey::try_from(Some(*mint_authority)).expect("authority");
-        hook.program_id = OptionalNonZeroPubkey::try_from(Some(caprail::ID)).expect("program_id");
+        hook.program_id =
+            OptionalNonZeroPubkey::try_from(Some(HOOK_PROGRAM_ID)).expect("program_id");
         state.base = mint_state(mint_authority, supply, decimals);
         state.pack_base();
         state.init_account_type().expect("тип акаунта");

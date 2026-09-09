@@ -9,16 +9,18 @@
 //! будь-який промах — помилка в правилі, а не «один із ста»; бюджет SC-002
 //! (≥ 99) лишається як межа, нижче якої тест не має права бути зеленим.
 
+#[path = "../../caprail/tests/common/mod.rs"]
 mod common;
 
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::{Discriminator, InstructionData, ToAccountMetas};
 use caprail::events::TransferAllowed;
-use caprail::hook::{extra_account_metas, EXECUTE_DISCRIMINATOR, EXTRA_ACCOUNT_COUNT};
+use caprail::hook::{extra_account_metas, EXTRA_ACCOUNT_COUNT, HOOK_PROGRAM_ID};
 use caprail::state::{
     Company, InvestorRecord, InvestorStatus, TokenConfig, TransferPolicy, GRANT_SEED, PERMIT_SEED,
 };
 use caprail::CaprailError;
+use caprail_hook::EXECUTE_DISCRIMINATOR;
 use common::*;
 use mollusk_svm::result::InstructionResult;
 use mollusk_svm::Mollusk;
@@ -60,7 +62,7 @@ fn token(mollusk: &Mollusk, policy: TransferPolicy) -> Token {
     let (company, company_bump) = Company::find_address(COMPANY_ID);
     let (mint, _) = TokenConfig::find_mint_address(&company, 0);
     let (token_config, config_bump) = TokenConfig::find_address(&mint);
-    let list = get_extra_account_metas_address(&mint, &caprail::ID);
+    let list = get_extra_account_metas_address(&mint, &HOOK_PROGRAM_ID);
 
     let company_state = Company {
         company_id: COMPANY_ID,
@@ -101,9 +103,10 @@ fn token(mollusk: &Mollusk, policy: TransferPolicy) -> Token {
         accounts: vec![
             (mint, hook_mint(mollusk, &company, SUPPLY, DECIMALS)),
             (token_config, anchor_account(mollusk, &config_state)),
-            (list, rent_exempt(mollusk, list_data, caprail::ID)),
+            (list, rent_exempt(mollusk, list_data, HOOK_PROGRAM_ID)),
             (company, anchor_account(mollusk, &company_state)),
             caprail_program(),
+            hook_program(),
         ],
     }
 }
@@ -176,12 +179,13 @@ fn transfer(
     let (permit, _) = Pubkey::find_program_address(&[PERMIT_SEED, source.as_ref()], &caprail::ID);
 
     let tail = [
+        caprail::ID,
         token.token_config,
         record,
         grant,
         permit,
         token.list,
-        caprail::ID,
+        HOOK_PROGRAM_ID,
     ]
     .map(|key| AccountMeta::new_readonly(key, false));
 
@@ -610,7 +614,7 @@ fn a_record_of_another_wallet_is_refused_by_the_token_program() {
 #[test]
 fn execute_discriminator_is_the_interface_one() {
     assert_eq!(
-        caprail::instruction::Execute::DISCRIMINATOR,
+        caprail_hook::instruction::Execute::DISCRIMINATOR,
         ExecuteInstruction::SPL_DISCRIMINATOR_SLICE
     );
     assert_eq!(
@@ -620,7 +624,7 @@ fn execute_discriminator_is_the_interface_one() {
     // Ті самі байти, що в даних інструкції інтерфейсу: далі йде лише `amount`.
     let key = Pubkey::new_unique();
     let interface = spl_transfer_hook_interface::instruction::execute(
-        &caprail::ID,
+        &HOOK_PROGRAM_ID,
         &key,
         &key,
         &key,
@@ -629,8 +633,15 @@ fn execute_discriminator_is_the_interface_one() {
     );
     assert_eq!(
         interface.data,
-        caprail::instruction::Execute { amount: AMOUNT }.data()
+        caprail_hook::instruction::Execute { amount: AMOUNT }.data()
     );
+}
+
+/// Адреса хука в `caprail` — константа, бо залежність іде лише в один бік.
+/// Розійдуться — Token-2022 кликатиме програму, якої немає.
+#[test]
+fn the_hook_program_id_in_caprail_is_this_program() {
+    assert_eq!(HOOK_PROGRAM_ID, caprail_hook::ID);
 }
 
 /// `execute` як окрема інструкція — з тими самими акаунтами, що резолвить
@@ -650,19 +661,20 @@ fn execute_directly(
     let (permit, _) =
         Pubkey::find_program_address(&[PERMIT_SEED, attempt.source.as_ref()], &caprail::ID);
     Instruction {
-        program_id: caprail::ID,
-        accounts: caprail::accounts::Execute {
+        program_id: HOOK_PROGRAM_ID,
+        accounts: caprail_hook::accounts::Execute {
             source: attempt.source,
             mint: token.mint,
             destination: attempt.destination,
             owner: *sender,
             extra_account_meta_list: token.list,
+            state_program: caprail::ID,
             token_config: *token_config,
             investor_record: record,
             grant,
             transfer_permit: permit,
         }
         .to_account_metas(None),
-        data: caprail::instruction::Execute { amount: AMOUNT }.data(),
+        data: caprail_hook::instruction::Execute { amount: AMOUNT }.data(),
     }
 }

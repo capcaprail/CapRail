@@ -868,6 +868,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "caprail-hook"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "base64 0.22.1",
+ "caprail",
+ "mollusk-svm",
+ "mollusk-svm-programs-token",
+ "solana-account",
+ "solana-instruction",
+ "solana-pubkey 4.2.1",
+ "solana-svm-log-collector",
+ "spl-discriminator",
+ "spl-pod",
+ "spl-tlv-account-resolution",
+ "spl-transfer-hook-interface",
+]
+
+[[package]]
 name = "cargo_toml"
 version = "0.22.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

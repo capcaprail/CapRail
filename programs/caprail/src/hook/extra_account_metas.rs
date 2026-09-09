@@ -1,8 +1,8 @@
 //! `ExtraAccountMetaList` — акаунти, які Token-2022 додасть до кожного
 //! `transfer_checked` цього мінта, щоб хук мав що читати.
 //!
-//! **Список пишеться один раз, у `create_token`, і живе стільки ж, скільки
-//! токен.** Тому тут одразу всі чотири акаунти, включно з `Grant` (US3) і
+//! **Список пишеться один раз — програмою-хуком за CPI з `create_token` — і
+//! живе стільки ж, скільки токен.** Тому тут одразу всі чотири акаунти, включно з `Grant` (US3) і
 //! `TransferPermit` (US2), яких ще немає: інакше vesting і ROFR вимагали б
 //! перевипуску вже створених токенів.
 //!
@@ -10,6 +10,11 @@
 //! байти на конфіг, і pubkey-літерал разом із рештою seeds туди не влазить.
 //! Гаманець одержувача й відправника беруться зрізом даних токен-акаунта
 //! (`owner` — байти 32..64 розкладки Token-2022).
+//!
+//! Seed-PDA зі списку Token-2022 виводить під програмою **хука**, а всі
+//! акаунти стану — PDA `caprail`. Тому перший додатковий акаунт — сама
+//! програма `caprail` (фіксована адреса), а решта — «зовнішні» PDA, що
+//! посилаються на неї за індексом.
 
 use anchor_lang::prelude::*;
 use spl_tlv_account_resolution::account::ExtraAccountMeta;
@@ -22,9 +27,9 @@ use crate::state::{InvestorRecord, TokenConfig, GRANT_SEED, PERMIT_SEED};
 // зіставленим із `get_extra_account_metas_address`.
 pub const EXTRA_ACCOUNT_METAS_SEED: &[u8] = b"extra-account-metas";
 
-/// Скільки акаунтів хук просить додатково. Від цього числа рахується розмір
-/// PDA у `create_token`.
-pub const EXTRA_ACCOUNT_COUNT: usize = 4;
+/// Скільки акаунтів хук просить додатково. Від цього числа хук рахує розмір
+/// PDA списку.
+pub const EXTRA_ACCOUNT_COUNT: usize = 5;
 
 // Позиції акаунтів у самій інструкції `Execute` (їх задає інтерфейс хука):
 // 0 — токен-акаунт джерела, 1 — мінт, 2 — токен-акаунт одержувача,
@@ -32,6 +37,8 @@ pub const EXTRA_ACCOUNT_COUNT: usize = 4;
 const SOURCE_INDEX: u8 = 0;
 const MINT_INDEX: u8 = 1;
 const DESTINATION_INDEX: u8 = 2;
+// Перший додатковий — програма `caprail`, власник PDA стану нижче.
+const STATE_PROGRAM_INDEX: u8 = 5;
 
 // Зріз `owner` у розкладці токен-акаунта Token-2022: mint [0..32], owner [32..64].
 const TOKEN_ACCOUNT_OWNER_OFFSET: u8 = 32;
@@ -41,8 +48,11 @@ const PUBKEY_LEN: u8 = 32;
 /// змінити сенс уже випущених токенів.
 pub fn extra_account_metas() -> Result<Vec<ExtraAccountMeta>> {
     let metas = vec![
-        // 5 — `TokenConfig` мінта: політика, версія, казначейство.
-        ExtraAccountMeta::new_with_seeds(
+        // 5 — програма `caprail`: під нею виводяться всі PDA нижче.
+        ExtraAccountMeta::new_with_pubkey(&crate::ID, false, false)?,
+        // 6 — `TokenConfig` мінта: політика, версія, казначейство.
+        ExtraAccountMeta::new_external_pda_with_seeds(
+            STATE_PROGRAM_INDEX,
             &[
                 Seed::Literal {
                     bytes: TokenConfig::SEED.to_vec(),
@@ -52,8 +62,9 @@ pub fn extra_account_metas() -> Result<Vec<ExtraAccountMeta>> {
             false,
             false,
         )?,
-        // 6 — `InvestorRecord` одержувача: допуск і його строк.
-        ExtraAccountMeta::new_with_seeds(
+        // 7 — `InvestorRecord` одержувача: допуск і його строк.
+        ExtraAccountMeta::new_external_pda_with_seeds(
+            STATE_PROGRAM_INDEX,
             &[
                 Seed::Literal {
                     bytes: InvestorRecord::SEED.to_vec(),
@@ -68,8 +79,9 @@ pub fn extra_account_metas() -> Result<Vec<ExtraAccountMeta>> {
             false,
             false,
         )?,
-        // 7 — `Grant` відправника: невестований залишок (US3).
-        ExtraAccountMeta::new_with_seeds(
+        // 8 — `Grant` відправника: невестований залишок (US3).
+        ExtraAccountMeta::new_external_pda_with_seeds(
+            STATE_PROGRAM_INDEX,
             &[
                 Seed::Literal {
                     bytes: GRANT_SEED.to_vec(),
@@ -84,10 +96,11 @@ pub fn extra_account_metas() -> Result<Vec<ExtraAccountMeta>> {
             false,
             false,
         )?,
-        // 8 — `TransferPermit`: доказ, що переказ іде через пропозицію (US2).
+        // 9 — `TransferPermit`: доказ, що переказ іде через пропозицію (US2).
         // Seed — сам токен-акаунт джерела, а не його власник: дозвіл живе одну
         // інструкцію і прив'язаний до конкретного рахунку.
-        ExtraAccountMeta::new_with_seeds(
+        ExtraAccountMeta::new_external_pda_with_seeds(
+            STATE_PROGRAM_INDEX,
             &[
                 Seed::Literal {
                     bytes: PERMIT_SEED.to_vec(),

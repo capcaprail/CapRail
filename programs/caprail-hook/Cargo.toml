@@ -1,0 +1,47 @@
+[package]
+name = "caprail-hook"
+description = "Transfer hook of CapRail tokens: the admission, vesting and ROFR rule, read-only over caprail state"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "caprail_hook"
+
+# Той самий набір фіч, що в `caprail`, і з тих самих причин (див. там).
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build", "caprail/idl-build"]
+custom-heap = []
+custom-panic = []
+anchor-debug = []
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
+
+[dependencies]
+anchor-lang.workspace = true
+anchor-spl = { workspace = true, features = ["token_2022", "token_2022_extensions"] }
+# Хук читає акаунти `caprail` — типи беруться звідти, з правильним власником
+# (`Account<TokenConfig>` перевіряє owner == caprail::ID), а не копією розкладки.
+# `cpi` = без точки входу: у цій програмі є лише своя.
+caprail = { path = "../caprail", features = ["cpi"] }
+spl-transfer-hook-interface.workspace = true
+spl-tlv-account-resolution.workspace = true
+spl-discriminator.workspace = true
+
+[dev-dependencies]
+mollusk-svm.workspace = true
+mollusk-svm-programs-token.workspace = true
+solana-account.workspace = true
+solana-instruction.workspace = true
+solana-pubkey.workspace = true
+solana-svm-log-collector.workspace = true
+base64.workspace = true
+spl-pod.workspace = true

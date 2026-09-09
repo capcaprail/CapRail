@@ -13,6 +13,9 @@
 //! Перевірки 3 (vesting, US3) і 4 (ROFR, US4) додаються сюди ж, у тому
 //! порядку, що в `PLAN.md`; акаунти під них (`grant`, `transfer_permit`) уже
 //! приїжджають — список акаунтів мінта незмінний.
+//!
+//! Стан тут чужий: усі акаунти нижче створює і змінює `caprail`, ця програма
+//! їх тільки читає (`Account<TokenConfig>` перевіряє власника `caprail::ID`).
 
 use anchor_lang::prelude::*;
 use anchor_spl::token_2022::spl_token_2022::extension::transfer_hook::TransferHookAccount;
@@ -23,16 +26,16 @@ use anchor_spl::token_2022::spl_token_2022::state::Account as TokenAccount;
 use spl_discriminator::SplDiscriminate;
 use spl_transfer_hook_interface::instruction::ExecuteInstruction;
 
-use crate::errors::CaprailError;
-use crate::events::TransferAllowed;
-use crate::state::{InvestorRecord, InvestorStatus, TokenConfig};
+use caprail::events::TransferAllowed;
+use caprail::state::{InvestorRecord, InvestorStatus, TokenConfig};
+use caprail::CaprailError;
 
 /// Дискримінатор не Anchor-івський, а з інтерфейсу хука: Token-2022 кладе в
 /// дані CPI саме його, і `#[program]` диспетчить по ньому через
 /// `#[instruction(discriminator = …)]` у `lib.rs`.
 pub const EXECUTE_DISCRIMINATOR: &[u8] = ExecuteInstruction::SPL_DISCRIMINATOR_SLICE;
 
-// Порядок і кількість акаунтів задає інтерфейс хука (0–4) і наш список (5–8):
+// Порядок і кількість акаунтів задає інтерфейс хука (0–4) і наш список (5–9):
 // переставити тут — означає читати політику з чужого акаунта.
 #[derive(Accounts)]
 pub struct Execute<'info> {
@@ -53,20 +56,25 @@ pub struct Execute<'info> {
     // 4. `ExtraAccountMetaList` — за ним токен-програма резолвила хвіст.
     /// CHECK: хук його не читає
     pub extra_account_meta_list: UncheckedAccount<'info>,
-    // 5. Політика мінта. `has_one` — перевірка 1: конфіг належить саме цьому
+    // 5. Програма `caprail` — власник стану; Token-2022 виводить під нею PDA
+    // нижче, тут вона лише проїжджає.
+    /// CHECK: адреса зафіксована списком акаунтів хука
+    #[account(address = caprail::ID)]
+    pub state_program: UncheckedAccount<'info>,
+    // 6. Політика мінта. `has_one` — перевірка 1: конфіг належить саме цьому
     // мінту. Через токен-програму сюди інший і не приїде, але на прямий виклик
     // причина має бути названа.
     #[account(has_one = mint @ CaprailError::TokenConfigMismatch)]
     pub token_config: Account<'info, TokenConfig>,
-    // 6. Запис реєстру одержувача. Не `Account<…>`: відсутній PDA — законний
+    // 7. Запис реєстру одержувача. Не `Account<…>`: відсутній PDA — законний
     // стан («не допущений»), а типізований акаунт відкинув би його раніше за
     // обробник і з чужою причиною.
     /// CHECK: власник і дискримінатор перевіряються в обробнику
     pub investor_record: UncheckedAccount<'info>,
-    // 7. Грант відправника — перевірка 3 (US3). Поки не читається.
+    // 8. Грант відправника — перевірка 3 (US3). Поки не читається.
     /// CHECK: до US3 не використовується
     pub grant: UncheckedAccount<'info>,
-    // 8. Дозвіл ROFR — перевірка 4 (US4). Поки не читається.
+    // 9. Дозвіл ROFR — перевірка 4 (US4). Поки не читається.
     /// CHECK: до US4 не використовується
     pub transfer_permit: UncheckedAccount<'info>,
 }
@@ -97,7 +105,7 @@ fn read_side(info: &AccountInfo) -> Result<TransferSide> {
 // одержувача), тож тут лише два стани: акаунт наш — читаємо; чужий (порожній
 // системний) — запису немає.
 fn read_investor_record(info: &AccountInfo) -> Result<Option<InvestorRecord>> {
-    if info.owner != &crate::ID {
+    if info.owner != &caprail::ID {
         return Ok(None);
     }
     let data = info.try_borrow_data()?;
