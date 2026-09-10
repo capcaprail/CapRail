@@ -17,6 +17,7 @@
     "lint:fix": "biome check --write .",
     "idl:sync": "node scripts/sync-idl.mjs",
     "idl:check": "node scripts/sync-idl.mjs --check",
+    "demo:us1": "pnpm --filter @caprail/demo demo",
     "gate": "pnpm idl:check && pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {

@@ -1,0 +1,35 @@
+{
+  "kind": "transfer-allowed",
+  "network": "localnet",
+  "signature": "2EhCQx6VyobBogWfLV6gw6WeziRGfh7BrztDQvBDypP8bujfB13ut7rMAfLNn7EjNQ9ULA91YRkk9A4361oPRSrB",
+  "slot": 1173,
+  "blockTime": 1789390641,
+  "err": null,
+  "fee": 5000,
+  "computeUnitsConsumed": 33887,
+  "accountKeys": [
+    "47zJiyJSpfLS2USy2bVdSajn7RpfwtPCVpPH9xgfHBHU",
+    "6E4q4AL76Sr5soPaj8Sup5FEstTPB5bsZAKwSxUp9198",
+    "C1Gi8s6DEjdyoB1veSgSgEjv8QgCuqtuV18baWBGTgF",
+    "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "8zircuWnddGnc9BkF5NpymCCNrSLsdw4hwgRMJnpP8Pq",
+    "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+    "D3x1rxVpc682rZRwo3bFfEDHu41zzAvY3SS8aNQvQ1h2",
+    "8MA6nXtKk8qUXsBKzHZnscqHvgDwhn56yBRnQYjFT1ee",
+    "6auztMwpMbPh7EGXdd9zmPhCfAfiaCjR979LEcsxBHkt",
+    "9UP1Nu2fZJ27Xu8YrzTuiu8a59aapr22esqbEZF6h17G",
+    "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi",
+    "5tEziabooV9fhaWumXYrLV73QFZMHsm2hT5byCsmRJEV"
+  ],
+  "logMessages": [
+    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb invoke [1]",
+    "Program log: Instruction: TransferChecked",
+    "Program 6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi invoke [2]",
+    "Program log: Instruction: Execute",
+    "Program data: FA9wrWKYitN4GAes1M+Xi8BtHIEofZMLdyb6EQyIhpK6syMF0X9Th3bLPaLyUanjPYhqu+SmbewnBeCtZvvteAtVzdZuLGXoTaNQZ2UWy/AG7y7eJ/Ourxfb8JJ3zKDilqbb5doVzScC0bH1UzRYzHYM6OjDtzeht/vDB5zpt3ZthwbeYsuW5C5dV1zEERJ3duaML0WN7cRw3zz9URujfKqgqIWS6ckj7sdxciL42oNEPVcJsxAOFSX0F4wbPnKQhDKJLpncJPMKAAAAAAAAAAACAAAA",
+    "Program 6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi consumed 5852 of 172787 compute units",
+    "Program 6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi success",
+    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb consumed 33887 of 200000 compute units",
+    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb success"
+  ]
+}

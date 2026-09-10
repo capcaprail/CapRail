@@ -1,0 +1,23 @@
+{
+  "kind": "set-policy",
+  "network": "localnet",
+  "signature": "67Y3cM9toT3f9HuWGRwhg46wy9R2DAtkmtyjsfwaQ7FzmRZtWQ5u2yYKa3phtaUXyRUN9QaQQDCUaLWz2wZF9Vup",
+  "slot": 1168,
+  "blockTime": 1789390638,
+  "err": null,
+  "fee": 5000,
+  "computeUnitsConsumed": 3883,
+  "accountKeys": [
+    "D2jQbULTD9EXJvGbHbgSS7RhJWDcYfpGeF4GJ4ZSUYH7",
+    "D3x1rxVpc682rZRwo3bFfEDHu41zzAvY3SS8aNQvQ1h2",
+    "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+    "95oBCxXjzUEts6oaTYLATNoRwuu2Mb5pzqCZLcBeEZYi"
+  ],
+  "logMessages": [
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g invoke [1]",
+    "Program log: Instruction: SetPolicy",
+    "Program data: fvZFMAnw4jR4GAes1M+Xi8BtHIEofZMLdyb6EQyIhpK6syMF0X9Th3bLPaLyUanjPYhqu+SmbewnBeCtZvvteAtVzdZuLGXoAQAAAAAAAgAAAC7vp2oAAAAA",
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g consumed 3883 of 200000 compute units",
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g success"
+  ]
+}

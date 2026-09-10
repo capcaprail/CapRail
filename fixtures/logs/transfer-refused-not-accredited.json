@@ -1,0 +1,42 @@
+{
+  "kind": "transfer-refused-not-accredited",
+  "network": "localnet",
+  "signature": "52a2UZ8mRT4tcn2mitQALP2n9hPRwCL7DAwKsCfNJmg3Emrnu3YtHZuLThJ6p5D3ojnZvPkXwFgRFQxjF911Ybnz",
+  "slot": 1175,
+  "blockTime": 1789390641,
+  "err": {
+    "InstructionError": [
+      0,
+      {
+        "Custom": 6000
+      }
+    ]
+  },
+  "fee": 5000,
+  "computeUnitsConsumed": 33302,
+  "accountKeys": [
+    "47zJiyJSpfLS2USy2bVdSajn7RpfwtPCVpPH9xgfHBHU",
+    "6E4q4AL76Sr5soPaj8Sup5FEstTPB5bsZAKwSxUp9198",
+    "BGYbHpTGufYwCVdaUYfKFMq6cwQqhyoe3puvQy6wJdrf",
+    "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "8zircuWnddGnc9BkF5NpymCCNrSLsdw4hwgRMJnpP8Pq",
+    "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+    "D3x1rxVpc682rZRwo3bFfEDHu41zzAvY3SS8aNQvQ1h2",
+    "FX3MWAkpiyeXPWV9CWtyzjb9TPMZazZhowRcyhiKbtn6",
+    "6auztMwpMbPh7EGXdd9zmPhCfAfiaCjR979LEcsxBHkt",
+    "9UP1Nu2fZJ27Xu8YrzTuiu8a59aapr22esqbEZF6h17G",
+    "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi",
+    "5tEziabooV9fhaWumXYrLV73QFZMHsm2hT5byCsmRJEV"
+  ],
+  "logMessages": [
+    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb invoke [1]",
+    "Program log: Instruction: TransferChecked",
+    "Program 6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi invoke [2]",
+    "Program log: Instruction: Execute",
+    "Program log: AnchorError occurred. Error Code: NotAccredited. Error Number: 6000. Error Message: recipient is not an accredited investor of this company.",
+    "Program 6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi consumed 6089 of 172787 compute units",
+    "Program 6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi failed: custom program error: 0x1770",
+    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb consumed 33302 of 200000 compute units",
+    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb failed: custom program error: 0x1770"
+  ]
+}

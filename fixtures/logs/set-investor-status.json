@@ -1,0 +1,27 @@
+{
+  "kind": "set-investor-status",
+  "network": "localnet",
+  "signature": "2WnaC5wcAPh6mtaBHeTWE7Gn8Lfsso5EGUvEXy6bH8W8DigZDxke4tnLgVCJWZ51RD4jUCbBZsvcGcJDQ67VqWUJ",
+  "slot": 1169,
+  "blockTime": 1789390639,
+  "err": null,
+  "fee": 5000,
+  "computeUnitsConsumed": 10277,
+  "accountKeys": [
+    "FN4grU7a5tjD2mm2eG5jWgNFFi8NEqQ4HGrrekpioQV",
+    "CneRLTgqozZnwzGHxfka9CX5qzdRxCYDKHd43sLtEFQW",
+    "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+    "95oBCxXjzUEts6oaTYLATNoRwuu2Mb5pzqCZLcBeEZYi",
+    "D3x1rxVpc682rZRwo3bFfEDHu41zzAvY3SS8aNQvQ1h2",
+    "11111111111111111111111111111111"
+  ],
+  "logMessages": [
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g invoke [1]",
+    "Program log: Instruction: SetInvestorStatus",
+    "Program 11111111111111111111111111111111 invoke [2]",
+    "Program 11111111111111111111111111111111 success",
+    "Program data: 9TGJ6KORfyN4GAes1M+Xi8BtHIEofZMLdyb6EQyIhpK6syMF0X9Th3bLPaLyUanjPYhqu+SmbewnBeCtZvvteAtVzdZuLGXoLl1XXMQREnd25owvRY3txHDfPP1RG6N8qqCohZLpySMBriKJbAAAAABVQQEv76dqAAAAAAOt8q7+6xKzhKB3gLa0vOSX3Rnzl2VJWVmB4P5H0ULC",
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g consumed 10277 of 200000 compute units",
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g success"
+  ]
+}
