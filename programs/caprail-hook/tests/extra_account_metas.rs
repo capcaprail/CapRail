@@ -276,3 +276,75 @@ fn created_token_extra_metas() -> Vec<u8> {
     assert_eq!(account_of(&result, &list).owner, HOOK_PROGRAM_ID);
     account_of(&result, &list).data.clone()
 }
+
+/// Фікстура для `packages/chain`: байти списку й зразкові адреси, виведені
+/// програмою для фіксованих ключів. TS-тест резолвить цей самий список тією
+/// бібліотекою, що й гаманець (`@solana/spl-token`), і звіряє з `pda.ts`;
+/// цей тест тримає фікстуру рівною програмі. Розійдуться seeds клієнта й
+/// програми — червоніє гейт, а не перший переказ на девнеті.
+#[test]
+fn the_vendored_fixture_is_the_program_list_and_its_addresses() {
+    use base64::engine::general_purpose::STANDARD as BASE64;
+    use base64::Engine;
+    use serde_json::{json, Value};
+
+    let path = format!(
+        "{}/../../fixtures/hook-extra-account-metas.json",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    let fixture: Value = serde_json::from_str(
+        &std::fs::read_to_string(&path).unwrap_or_else(|err| panic!("немає {path}: {err}")),
+    )
+    .expect("фікстура — JSON");
+
+    let mut list = vec![
+        0u8;
+        ExtraAccountMetaList::size_of(EXTRA_ACCOUNT_COUNT).expect("розмір списку")
+    ];
+    ExtraAccountMetaList::init::<ExecuteInstruction>(
+        &mut list,
+        &extra_account_metas().expect("список акаунтів хука"),
+    )
+    .expect("список має пакуватись");
+
+    // Ключі гаманців — сталі байти, а не `new_unique()`: фікстура має бути
+    // однаковою на кожній машині.
+    let company_id: u64 = 7;
+    let token_index: u32 = 0;
+    let sender = Pubkey::new_from_array([0x51; 32]);
+    let recipient = Pubkey::new_from_array([0x52; 32]);
+    let (company, _) = caprail::state::Company::find_address(company_id);
+    let (mint, _) = TokenConfig::find_mint_address(&company, token_index);
+    let source = common::ata(&sender, &mint);
+    let destination = common::ata(&recipient, &mint);
+    let (grant, _) =
+        Pubkey::find_program_address(&[GRANT_SEED, mint.as_ref(), sender.as_ref()], &caprail::ID);
+    let (permit, _) = Pubkey::find_program_address(&[PERMIT_SEED, source.as_ref()], &caprail::ID);
+
+    let expected = json!({
+        "list": BASE64.encode(&list),
+        "sample": {
+            "companyId": company_id.to_string(),
+            "company": company.to_string(),
+            "tokenIndex": token_index,
+            "mint": mint.to_string(),
+            "tokenConfig": TokenConfig::find_address(&mint).0.to_string(),
+            "treasury": common::ata(&company, &mint).to_string(),
+            "extraAccountMetaList": find_extra_account_meta_list(&mint).0.to_string(),
+            "sender": sender.to_string(),
+            "recipient": recipient.to_string(),
+            "source": source.to_string(),
+            "destination": destination.to_string(),
+            "investorRecord": InvestorRecord::find_address(&mint, &recipient).0.to_string(),
+            "grant": grant.to_string(),
+            "transferPermit": permit.to_string(),
+        }
+    });
+
+    assert_eq!(
+        fixture,
+        expected,
+        "фікстура відстала від програми; очікуваний вміст:\n{}",
+        serde_json::to_string_pretty(&expected).expect("json")
+    );
+}

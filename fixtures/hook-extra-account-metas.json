@@ -1,0 +1,19 @@
+{
+  "list": "aSVlxUv7ZhqzAAAABQAAAACSkFpwDPUIAUq2hudqmLoZl5q4fPcbjB/xpskkBqBN8wAAhQEFdG9rZW4DAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACFAQhpbnZlc3RvcgMBBAIgIAAAAAAAAAAAAAAAAAAAAAAAAIUBBWdyYW50AwEEACAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAhQEGcGVybWl0AwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+  "sample": {
+    "companyId": "7",
+    "company": "FujMfE9BGKrnLqaKjWBxx9ht4jaCStpnV1tckxqqv9pM",
+    "tokenIndex": 0,
+    "mint": "3CeR2RwJJ98oqitGhUQraD7TcLxhASNZNKzCjNENiJc9",
+    "tokenConfig": "9zTdsUUCmZjzT4a1oY5YuuYMzuy6NpSfPKzwtytt37Tb",
+    "treasury": "CEmEinUqWWKF4NsMvzw15NyqiaK217MqewwjeGRZeBPb",
+    "extraAccountMetaList": "4FzkXhZAHhjDtytjx9qUNLbVgqp4Waw8JELnzaNKjPH4",
+    "sender": "6URwbPipuA4MJLG7LCRRZuWnms3JZ9cRG3z9indXWz8G",
+    "recipient": "6YMEjhBqVTMaSRWcmVkLrnHZ22FWEDJEpTeonAg8GKSy",
+    "source": "8CqpM6ps2Mpu8NZG1FGVZByUd3QQ3ZC2cfjvb5zoY7nv",
+    "destination": "837nQZdijVBEZVC2fQDuH9e6Z9mqBDYYLAAhQcJYepjv",
+    "investorRecord": "Fj5dA6yVvo2dUbY1cRVSvM6NhwnLzmL8XjWTfAF9oG4X",
+    "grant": "3dbmQPmbvLFiz1Yomuqy8TNLehE3cZCcbMRRVTbDfQjx",
+    "transferPermit": "7Vh8Lo2v6cPXyFRc1HEgm6G6DzARgrdR6XhTh4JiJnLW"
+  }
+}

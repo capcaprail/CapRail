@@ -877,6 +877,7 @@ dependencies = [
  "mollusk-svm",
  "mollusk-svm-bencher",
  "mollusk-svm-programs-token",
+ "serde_json",
  "solana-account",
  "solana-instruction",
  "solana-pubkey 4.2.1",

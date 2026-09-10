@@ -48,3 +48,5 @@ solana-pubkey.workspace = true
 solana-svm-log-collector.workspace = true
 base64.workspace = true
 spl-pod.workspace = true
+# Фікстура списку хука для `packages/chain` (`fixtures/hook-extra-account-metas.json`).
+serde_json.workspace = true
