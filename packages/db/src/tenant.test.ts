@@ -3,10 +3,11 @@ import type { SQL } from 'drizzle-orm'
 import { PgDialect } from 'drizzle-orm/pg-core'
 import { describe, expect, it } from 'vitest'
 import type { Db, Tx } from './client.ts'
-import { type TenantScope, tenantSettings, withTenant } from './tenant.ts'
+import { API_ROLE_SQL, type TenantScope, tenantSettings, withTenant } from './tenant.ts'
 
 const WALLET = walletAddressSchema.parse('As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g')
-const COMPANY = 'a8a4KNjnNoSsDvYuKAuFptgt471FtC3UsrYT3sT5Mm4'
+// The u64 `company_id` as the API and the JWT carry it.
+const COMPANY = '7'
 
 function fakeDb(executed: SQL[]): Db {
   const tx = {
@@ -41,7 +42,7 @@ describe('tenantSettings', () => {
 })
 
 describe('withTenant', () => {
-  it('sets both settings transaction-locally before the callback, values as parameters', async () => {
+  it('assumes the api role first, then sets both settings, all before the callback', async () => {
     const executed: SQL[] = []
     const order: string[] = []
     const result = await withTenant(
@@ -53,14 +54,18 @@ describe('withTenant', () => {
       },
     )
     expect(result).toBe(42)
-    expect(executed).toHaveLength(2)
-    for (const query of executed) {
-      const { sql, params } = render(query)
+    expect(executed).toHaveLength(3)
+    const [role, ...settings] = executed.map(render)
+    // The owner role bypasses RLS; the policies only bind once the transaction runs
+    // as `caprail_api`, and LOCAL is what undoes it before the pooler reuses the socket.
+    expect(role).toEqual({ sql: 'set local role "caprail_api"', params: [] })
+    expect(role?.sql).toBe(API_ROLE_SQL)
+    for (const { sql, params } of settings) {
       expect(sql).toMatch(/set_config\(\$1, \$2, true\)/)
       expect(params).toHaveLength(2)
     }
-    expect(render(executed[0] as SQL).params).toEqual(['app.company_id', COMPANY])
-    expect(render(executed[1] as SQL).params).toEqual(['app.wallet', WALLET])
+    expect(settings[0]?.params).toEqual(['app.company_id', COMPANY])
+    expect(settings[1]?.params).toEqual(['app.wallet', WALLET])
     expect(order).toEqual(['callback'])
   })
 
