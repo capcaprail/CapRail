@@ -1,9 +1,23 @@
 {
   "kind": "transfer-refused-expired",
   "network": "localnet",
-  "signature": "5eb3jBCjyYGFK8vZhCCCVLvbY2W4SYUgF1wMdQ5JHxj9sWj3fLKHx4i7x3yTwhu9567bfm4uig6mQgFw5PDoVt3i",
-  "slot": 1214,
-  "blockTime": 1789390658,
+  "fee": 5000,
+  "computeUnitsConsumed": 41595,
+  "signature": "3w8o381wxohtN3HrVQ6zxNUz76pfV8BYcJQVdT1WMbAjffv39bPTBu72sikkZsv7XKpEqtT3yWB1uwy3NBHw9vXe",
+  "slot": 87,
+  "blockTime": 1789394532,
+  "logs": [
+    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb invoke [1]",
+    "Program log: Instruction: TransferChecked",
+    "Program 6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi invoke [2]",
+    "Program log: Instruction: Execute",
+    "Program log: AnchorError thrown in programs/caprail-hook/src/execute.rs:142. Error Code: AccreditationExpired. Error Number: 6001. Error Message: recipient's accreditation has expired.",
+    "Program 6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi consumed 6882 of 165287 compute units",
+    "Program 6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi failed: custom program error: 0x1771",
+    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb consumed 41595 of 200000 compute units",
+    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb failed: custom program error: 0x1771"
+  ],
+  "failed": true,
   "err": {
     "InstructionError": [
       0,
@@ -12,31 +26,55 @@
       }
     ]
   },
-  "fee": 5000,
-  "computeUnitsConsumed": 34095,
   "accountKeys": [
-    "47zJiyJSpfLS2USy2bVdSajn7RpfwtPCVpPH9xgfHBHU",
-    "6E4q4AL76Sr5soPaj8Sup5FEstTPB5bsZAKwSxUp9198",
-    "FmVmRDYxjyEwTZUxMPeQjaBKLzN6qoL1YYkQoUq3bKs1",
+    "6xw8tDnUxNVkzcxxvBhYzcvpXyBtoxejrskbm4mXi2C8",
+    "BEpNJ69e6wSbV17wjxf6jEjW1CqERgo7EYHSSEQ1DAnG",
+    "9XBpGD3QTAVyZghAY7nKDsPKgg7PvQ6uYHHcvfh4Beq6",
     "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
-    "8zircuWnddGnc9BkF5NpymCCNrSLsdw4hwgRMJnpP8Pq",
+    "CSVHYHQZ7tH1KERjxDTqbUYZfoS4NaPk7ZjFfR8sNeyz",
     "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
-    "D3x1rxVpc682rZRwo3bFfEDHu41zzAvY3SS8aNQvQ1h2",
-    "GWuTpMyuhuu5i5z1GxDcBMf6XPUN74ngNRPesHnEjRcz",
-    "6auztMwpMbPh7EGXdd9zmPhCfAfiaCjR979LEcsxBHkt",
-    "9UP1Nu2fZJ27Xu8YrzTuiu8a59aapr22esqbEZF6h17G",
+    "BZeizhZPt8uqS7pGV6omjobVJab7mVYfLUMdydTqwCHk",
+    "82xCnmggb9ffnJKE6HVGaxh41yUSZtzRxqFZ3XdGGf4",
+    "FPgMQvVXLNXFjSw3P5nUSrK3UiNCjKDHA3KskTcZ8Yiw",
+    "ETdCXChxxT18JGy86D3iYM8td1fww89Vcqw1FpCQfhys",
     "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi",
-    "5tEziabooV9fhaWumXYrLV73QFZMHsm2hT5byCsmRJEV"
+    "6WUaFSGCLZpfEuJs9kiYhrLB9vN4ZQ9br4WJKiGTVWAU"
   ],
-  "logMessages": [
-    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb invoke [1]",
-    "Program log: Instruction: TransferChecked",
-    "Program 6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi invoke [2]",
-    "Program log: Instruction: Execute",
-    "Program log: AnchorError thrown in programs/caprail-hook/src/execute.rs:142. Error Code: AccreditationExpired. Error Number: 6001. Error Message: recipient's accreditation has expired.",
-    "Program 6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi consumed 6882 of 172787 compute units",
-    "Program 6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi failed: custom program error: 0x1771",
-    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb consumed 34095 of 200000 compute units",
-    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb failed: custom program error: 0x1771"
+  "instructions": [
+    {
+      "programId": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "accounts": [
+        "BEpNJ69e6wSbV17wjxf6jEjW1CqERgo7EYHSSEQ1DAnG",
+        "CSVHYHQZ7tH1KERjxDTqbUYZfoS4NaPk7ZjFfR8sNeyz",
+        "9XBpGD3QTAVyZghAY7nKDsPKgg7PvQ6uYHHcvfh4Beq6",
+        "6xw8tDnUxNVkzcxxvBhYzcvpXyBtoxejrskbm4mXi2C8",
+        "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+        "BZeizhZPt8uqS7pGV6omjobVJab7mVYfLUMdydTqwCHk",
+        "82xCnmggb9ffnJKE6HVGaxh41yUSZtzRxqFZ3XdGGf4",
+        "FPgMQvVXLNXFjSw3P5nUSrK3UiNCjKDHA3KskTcZ8Yiw",
+        "ETdCXChxxT18JGy86D3iYM8td1fww89Vcqw1FpCQfhys",
+        "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi",
+        "6WUaFSGCLZpfEuJs9kiYhrLB9vN4ZQ9br4WJKiGTVWAU"
+      ],
+      "data": "DAEAAAAAAAAAAA==",
+      "outer": 0
+    },
+    {
+      "programId": "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi",
+      "accounts": [
+        "BEpNJ69e6wSbV17wjxf6jEjW1CqERgo7EYHSSEQ1DAnG",
+        "CSVHYHQZ7tH1KERjxDTqbUYZfoS4NaPk7ZjFfR8sNeyz",
+        "9XBpGD3QTAVyZghAY7nKDsPKgg7PvQ6uYHHcvfh4Beq6",
+        "6xw8tDnUxNVkzcxxvBhYzcvpXyBtoxejrskbm4mXi2C8",
+        "6WUaFSGCLZpfEuJs9kiYhrLB9vN4ZQ9br4WJKiGTVWAU",
+        "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+        "BZeizhZPt8uqS7pGV6omjobVJab7mVYfLUMdydTqwCHk",
+        "82xCnmggb9ffnJKE6HVGaxh41yUSZtzRxqFZ3XdGGf4",
+        "FPgMQvVXLNXFjSw3P5nUSrK3UiNCjKDHA3KskTcZ8Yiw",
+        "ETdCXChxxT18JGy86D3iYM8td1fww89Vcqw1FpCQfhys"
+      ],
+      "data": "aSVlxUv7ZhoBAAAAAAAAAA==",
+      "outer": 0
+    }
   ]
 }

@@ -13,7 +13,8 @@
       "!**/target",
       "!**/.anchor",
       "!packages/chain/src/idl",
-      "!packages/db/migrations/meta"
+      "!packages/db/migrations/meta",
+      "!fixtures/logs"
     ]
   },
   "formatter": {

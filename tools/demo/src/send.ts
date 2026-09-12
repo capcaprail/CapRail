@@ -4,6 +4,7 @@
 // subject of SC-010 and SC-011, and reading them in a separate pass would measure a
 // different transaction than the one that went through.
 import { compileTransaction, type TxPlan, toPlan } from '@caprail/chain'
+import { fromTransactionResponse, type ProgramTransaction } from '@caprail/indexer'
 import type {
   Connection,
   Keypair,
@@ -23,6 +24,8 @@ export type Landed = {
   readonly logs: readonly string[]
   /** Addresses of the message, in index order — enough for a log parser to name the programs. */
   readonly accountKeys: readonly string[]
+  /** The same transaction as the worker's parser receives it — what the fixtures are. */
+  readonly transaction: ProgramTransaction
 }
 
 export type Sent = Landed & { readonly bytes: number }
@@ -90,14 +93,16 @@ async function landed(
     maxSupportedTransactionVersion: 0,
   })
   if (detail === null) throw new Error(`confirmed transaction not found: ${signature}`)
+  const transaction = fromTransactionResponse(signature, detail)
   return {
     signature,
     slot: detail.slot,
     blockTime: detail.blockTime ?? undefined,
     feeLamports: detail.meta?.fee,
     computeUnits: detail.meta?.computeUnitsConsumed,
-    logs: detail.meta?.logMessages ?? [],
-    accountKeys: detail.transaction.message.staticAccountKeys.map((key) => key.toBase58()),
+    logs: transaction.logs,
+    accountKeys: transaction.accountKeys ?? [],
+    transaction,
     err: detail.meta?.err ?? null,
   }
 }

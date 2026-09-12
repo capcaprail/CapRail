@@ -1,4 +1,8 @@
-import type { ProgramTransaction, TransactionHandler } from '@caprail/indexer'
+import {
+  fromTransactionResponse,
+  type ProgramTransaction,
+  type TransactionHandler,
+} from '@caprail/indexer'
 import type { Connection, PublicKey } from '@solana/web3.js'
 
 export const PAGE_SIZE = 1000
@@ -29,13 +33,7 @@ export function rpcFor(connection: Connection, programId: PublicKey): BackfillRp
         maxSupportedTransactionVersion: 0,
       })
       if (tx === null) return null
-      return {
-        signature,
-        slot: tx.slot,
-        blockTime: tx.blockTime ?? null,
-        logs: tx.meta?.logMessages ?? [],
-        failed: tx.meta?.err != null,
-      }
+      return fromTransactionResponse(signature, tx)
     },
   }
 }

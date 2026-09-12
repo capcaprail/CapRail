@@ -208,6 +208,9 @@ importers:
       '@caprail/chain':
         specifier: workspace:^
         version: link:../../packages/chain
+      '@caprail/indexer':
+        specifier: workspace:^
+        version: link:../../packages/indexer
       '@caprail/shared':
         specifier: workspace:^
         version: link:../../packages/shared

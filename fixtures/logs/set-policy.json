@@ -1,23 +1,36 @@
 {
   "kind": "set-policy",
   "network": "localnet",
-  "signature": "67Y3cM9toT3f9HuWGRwhg46wy9R2DAtkmtyjsfwaQ7FzmRZtWQ5u2yYKa3phtaUXyRUN9QaQQDCUaLWz2wZF9Vup",
-  "slot": 1168,
-  "blockTime": 1789390638,
-  "err": null,
   "fee": 5000,
   "computeUnitsConsumed": 3883,
-  "accountKeys": [
-    "D2jQbULTD9EXJvGbHbgSS7RhJWDcYfpGeF4GJ4ZSUYH7",
-    "D3x1rxVpc682rZRwo3bFfEDHu41zzAvY3SS8aNQvQ1h2",
-    "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
-    "95oBCxXjzUEts6oaTYLATNoRwuu2Mb5pzqCZLcBeEZYi"
-  ],
-  "logMessages": [
+  "signature": "4GLFA1utTNZdaaAe5bJuLBpPfoRQ1NgMG23wE9ucYwM9Jh4j1ASpTZLTx6oe3NNqe2q1LbBh9vS1RC169WCPZHnK",
+  "slot": 42,
+  "blockTime": 1789394513,
+  "logs": [
     "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g invoke [1]",
     "Program log: Instruction: SetPolicy",
-    "Program data: fvZFMAnw4jR4GAes1M+Xi8BtHIEofZMLdyb6EQyIhpK6syMF0X9Th3bLPaLyUanjPYhqu+SmbewnBeCtZvvteAtVzdZuLGXoAQAAAAAAAgAAAC7vp2oAAAAA",
+    "Program data: fvZFMAnw4jRerAJMWbr2WfM6m49fP/eHsl1XXB25WF/TmTss8R7ylKn4Dv0tY342tSRN3VsSz6luMhhJjbEkg1IpWhYm/RPlAQAAAAAAAgAAAFH+p2oAAAAA",
     "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g consumed 3883 of 200000 compute units",
     "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g success"
+  ],
+  "failed": false,
+  "err": null,
+  "accountKeys": [
+    "DQphM6G3mGGBrLXCJqoZr1gvWWUTajAb8FzBGHTCfvER",
+    "BZeizhZPt8uqS7pGV6omjobVJab7mVYfLUMdydTqwCHk",
+    "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+    "7NZT47ZAgvR8P8B74Ku3M8jjqh721sxGexeLUL1Lkd71"
+  ],
+  "instructions": [
+    {
+      "programId": "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+      "accounts": [
+        "DQphM6G3mGGBrLXCJqoZr1gvWWUTajAb8FzBGHTCfvER",
+        "7NZT47ZAgvR8P8B74Ku3M8jjqh721sxGexeLUL1Lkd71",
+        "BZeizhZPt8uqS7pGV6omjobVJab7mVYfLUMdydTqwCHk"
+      ],
+      "data": "KIUMnevKAoQBAAAAAAA=",
+      "outer": 0
+    }
   ]
 }

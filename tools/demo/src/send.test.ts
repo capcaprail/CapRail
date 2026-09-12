@@ -50,8 +50,8 @@ describe('fixtures/logs', () => {
 
   it('refused ones name a reason that matches their error code; allowed ones carry one event', () => {
     for (const fixture of fixtures()) {
-      const parsed = reasonFromLogs(fixture.logMessages)
-      const events = fixture.logMessages.filter((line) => line.startsWith('Program data: '))
+      const parsed = reasonFromLogs(fixture.logs)
+      const events = fixture.logs.filter((line) => line.startsWith('Program data: '))
       if (fixture.kind.startsWith('transfer-refused')) {
         expect(fixture.err, fixture.kind).not.toBeNull()
         expect(parsed?.reason, fixture.kind).toBe(

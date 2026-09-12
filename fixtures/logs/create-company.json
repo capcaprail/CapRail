@@ -1,25 +1,47 @@
 {
   "kind": "create-company",
   "network": "localnet",
-  "signature": "5Xg6yKNPhmPK5ShZQi3RFvjxfoHrYgKfFdiooiLCSufpNtk12ZyEj4vXJToS6cg9fB7hHvRNQnpXvvV2W5f58yt5",
-  "slot": 1166,
-  "blockTime": 1789390638,
-  "err": null,
   "fee": 5000,
   "computeUnitsConsumed": 7995,
-  "accountKeys": [
-    "D2jQbULTD9EXJvGbHbgSS7RhJWDcYfpGeF4GJ4ZSUYH7",
-    "95oBCxXjzUEts6oaTYLATNoRwuu2Mb5pzqCZLcBeEZYi",
-    "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
-    "11111111111111111111111111111111"
-  ],
-  "logMessages": [
+  "signature": "2Cd2ya7581VAbdT1WJydZN4WHrAejkS6nHsvobuJZR4c5ZDMHkesetKEwWpmFCzRmLbm1DMYuX9E4CZMxxEbhQcV",
+  "slot": 40,
+  "blockTime": 1789394512,
+  "logs": [
     "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g invoke [1]",
     "Program log: Instruction: CreateCompany",
     "Program 11111111111111111111111111111111 invoke [2]",
     "Program 11111111111111111111111111111111 success",
-    "Program data: t9CNUQZTcGN4GAes1M+Xi8BtHIEofZMLdyb6EQyIhpK6syMF0X9Th1+CN3aeAxxnsr3GAIgzHvx7PoyZTihT/3szsmlgJ9RQ1YcQ+AMASgoDrfKu/usSs4Sgd4C2tLzkl90Z85dlSVlZgeD+R9FCwgkAAABEZW1vIENvcnA=",
+    "Program data: t9CNUQZTcGNerAJMWbr2WfM6m49fP/eHsl1XXB25WF/TmTss8R7ylCQdpWG4GCxKuGaIBhVKyK2cXUKqnObOwvVPVLM8a45hYZEnvhRtZN51aYzD1YUjsYyNO588jNKdZqSVA2D0bJw85RaSYXT8tAkAAABEZW1vIENvcnA=",
     "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g consumed 7995 of 200000 compute units",
     "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g success"
+  ],
+  "failed": false,
+  "err": null,
+  "accountKeys": [
+    "DQphM6G3mGGBrLXCJqoZr1gvWWUTajAb8FzBGHTCfvER",
+    "7NZT47ZAgvR8P8B74Ku3M8jjqh721sxGexeLUL1Lkd71",
+    "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+    "11111111111111111111111111111111"
+  ],
+  "instructions": [
+    {
+      "programId": "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+      "accounts": [
+        "DQphM6G3mGGBrLXCJqoZr1gvWWUTajAb8FzBGHTCfvER",
+        "7NZT47ZAgvR8P8B74Ku3M8jjqh721sxGexeLUL1Lkd71",
+        "11111111111111111111111111111111"
+      ],
+      "data": "JMDZk+mBxhIkHaVhuBgsSnVpjMPVhSOxjI07nzyM0p1mpJUDYPRsnDzlFpJhdPy0CQAAAERlbW8gQ29ycA==",
+      "outer": 0
+    },
+    {
+      "programId": "11111111111111111111111111111111",
+      "accounts": [
+        "DQphM6G3mGGBrLXCJqoZr1gvWWUTajAb8FzBGHTCfvER",
+        "7NZT47ZAgvR8P8B74Ku3M8jjqh721sxGexeLUL1Lkd71"
+      ],
+      "data": "AAAAAPAEGgAAAAAAdQAAAAAAAACSkFpwDPUIAUq2hudqmLoZl5q4fPcbjB/xpskkBqBN8w==",
+      "outer": 0
+    }
   ]
 }
