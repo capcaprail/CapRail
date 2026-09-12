@@ -2,10 +2,13 @@ import { PROGRAM_ID } from '@caprail/chain'
 import { createDb } from '@caprail/db'
 import { Connection } from '@solana/web3.js'
 import { pino } from 'pino'
+import { createApplier } from './apply.ts'
 import { type BackfillRpc, backfill, rpcFor } from './backfill.ts'
 import { workerConfigFromEnv } from './config.ts'
 import { cursorStore } from './cursor.ts'
+import { indexStore } from './index-store.ts'
 import { createPipeline } from './pipeline.ts'
+import { applyRpcFor } from './rpc.ts'
 import { subscribeLogs } from './subscribe.ts'
 
 // The subscription is the fast path; a backfill from the cursor on a timer is the
@@ -36,11 +39,11 @@ async function main(): Promise<void> {
   }
 
   const pipeline = createPipeline({
-    // The parser and applier arrive with T027/T028; until then every transaction is
-    // acknowledged so the cursor tracks the chain from the first deploy.
-    apply: async (tx) => {
-      logger.debug({ signature: tx.signature, slot: tx.slot, failed: tx.failed }, 'transaction')
-    },
+    apply: createApplier({
+      store: indexStore(database.db),
+      rpc: applyRpcFor(primary, PROGRAM_ID),
+      log: logger,
+    }),
     store,
     initial: await store.load(),
     onError: (err, tx) => logger.error({ err, signature: tx.signature }, 'apply failed'),
