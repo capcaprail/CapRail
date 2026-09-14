@@ -5,6 +5,8 @@ import { createApp } from './app.ts'
 import { createSessionTokens } from './auth/jwt.ts'
 import { drizzleNonceStore } from './auth/nonce-store.ts'
 import { apiConfigFromEnv } from './config.ts'
+import { createFeed } from './index/feed.ts'
+import { drizzleIndexReader } from './index/reader.ts'
 import { createLogger } from './logger.ts'
 import type { IndexerCursor } from './routes/health.ts'
 
@@ -22,6 +24,13 @@ function main(): void {
     return rows[0] ?? null
   }
 
+  const reader = drizzleIndexReader(database.db)
+  const feed = createFeed({
+    // The poller runs as the company: every panel of that company shares it.
+    source: (companyId, since) => reader.feed({ companyId }, companyId, since),
+    onError: (err, companyId) => logger.error({ err, companyId }, 'feed poll failed'),
+  })
+
   const app = createApp({
     logger,
     webOrigins: config.webOrigins,
@@ -29,11 +38,10 @@ function main(): void {
     auth: {
       nonces: drizzleNonceStore(database.db),
       tokens: createSessionTokens({ secret: config.jwtSecret }),
-      // The index tables (companies, investors) arrive with the indexer schema; until
-      // then every wallet signs in as a member of nothing, which the panel shows as
-      // an empty cabinet rather than a refusal.
-      memberships: () => Promise.resolve([]),
+      memberships: reader.membershipsOf,
     },
+    reader,
+    feed,
   })
 
   const server = serve({ fetch: app.fetch, port: config.port, hostname: '0.0.0.0' }, (info) => {

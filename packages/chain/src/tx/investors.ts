@@ -1,4 +1,5 @@
 import { BN } from '@anchor-lang/core'
+import type { InvestorStatus } from '@caprail/shared'
 import type { PublicKey } from '@solana/web3.js'
 import { SystemProgram } from '@solana/web3.js'
 import { investorRecordPda, tokenConfigPda } from '../pda.ts'
@@ -8,9 +9,9 @@ import { type TxPlan, toPlan } from './plan.ts'
 // The investor registry (FR-002). The compliance officer sets a status with their own
 // key; the record is created on first use and rewritten afterwards.
 
-export const INVESTOR_STATUSES = ['none', 'approved', 'revoked'] as const
-
-export type InvestorStatus = (typeof INVESTOR_STATUSES)[number]
+// The status names live in `shared` (the API speaks them too); re-exported so the
+// builder's callers need one import.
+export { INVESTOR_STATUSES, type InvestorStatus } from '@caprail/shared'
 
 export type SetInvestorStatusArgs = {
   readonly company: PublicKey

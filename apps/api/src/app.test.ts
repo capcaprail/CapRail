@@ -4,11 +4,14 @@ import { describe, expect, it } from 'vitest'
 import { type AppDeps, createApp } from './app.ts'
 import { createSessionTokens } from './auth/jwt.ts'
 import { memoryNonceStore } from './auth/nonce-store.ts'
+import { createFeed } from './index/feed.ts'
+import { memoryIndex, memoryIndexReader } from './index/memory-reader.ts'
 import { REQUEST_ID_HEADER } from './logger.ts'
 
 const ORIGIN = 'http://localhost:5173'
 
 function build(overrides: Partial<AppDeps> = {}) {
+  const reader = memoryIndexReader(memoryIndex())
   return createApp({
     logger: pino({ level: 'silent' }),
     webOrigins: [ORIGIN],
@@ -18,6 +21,11 @@ function build(overrides: Partial<AppDeps> = {}) {
       tokens: createSessionTokens({ secret: 's'.repeat(32) }),
       memberships: () => Promise.resolve([]),
     },
+    reader,
+    feed: createFeed({
+      source: (id, since) => reader.feed({ companyId: id }, id, since),
+      onError: () => {},
+    }),
     ...overrides,
   })
 }

@@ -1,3 +1,4 @@
+import { ATTEMPT_ORIGINS, ATTEMPT_OUTCOMES, INVESTOR_STATUSES } from '@caprail/shared'
 import { type SQL, sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
@@ -55,18 +56,13 @@ const apiSelect = (table: string, using: SQL) =>
 const u64 = (name: string) => numeric(name, { precision: 20, scale: 0, mode: 'bigint' })
 const unixTime = (name: string) => timestamp(name, { withTimezone: true })
 
-// Status names match `packages/chain` (`INVESTOR_STATUSES`) and the on-chain enum
-// order; the index stores what the event said, lowercased.
-export const INVESTOR_STATUSES = ['none', 'approved', 'revoked'] as const
+// The enum literals are `packages/shared`'s: the index stores what the event said,
+// and the API answers with the same names.
 export const investorStatus = pgEnum('investor_status', INVESTOR_STATUSES)
-
-export const ATTEMPT_OUTCOMES = ['allowed', 'rejected'] as const
 export const attemptOutcome = pgEnum('attempt_outcome', ATTEMPT_OUTCOMES)
-
 // `chain` rows come from the worker (event or failed transaction); `simulation` rows
 // are reported by the panel when the wallet's preflight refused the transfer, which
 // never reaches the chain (PLAN → risk 2).
-export const ATTEMPT_ORIGINS = ['chain', 'simulation'] as const
 export const attemptOrigin = pgEnum('attempt_origin', ATTEMPT_ORIGINS)
 
 export const indexerCursor = pgTable(
