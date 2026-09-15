@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useSession } from '../auth/SessionProvider.tsx'
 import { companyMemberships } from '../auth/session.ts'
-import { Cell, DoubleRule, EmptyRows, Help, Row, Table } from '../components/Ledger.tsx'
+import { Actions, Cell, DoubleRule, EmptyRows, Help, Row, Table } from '../components/Ledger.tsx'
 import { short } from '../format.ts'
 
 // Reached when a key holds a role in more than one company, or in none: the
@@ -50,6 +50,15 @@ export function CompanyChooser() {
           is available to every signed-in wallet.
         </Help>
       )}
+      <Actions>
+        <Link to="/company/new" className="act">
+          Create a company
+        </Link>
+      </Actions>
+      <Help>
+        Two transactions signed by this key: the company with its two roles, then the token with its
+        policy. This key becomes the administrator.
+      </Help>
     </>
   )
 }

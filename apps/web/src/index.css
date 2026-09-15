@@ -96,6 +96,11 @@
     font-size: 12px;
     white-space: nowrap;
   }
+  /* a full address in a ledger cell: may break rather than widen the page */
+  .mono.wrap {
+    white-space: normal;
+    word-break: break-all;
+  }
   .act {
     text-decoration: underline;
     text-underline-offset: 3px;
@@ -139,6 +144,10 @@
   }
   .tr.sub .k {
     padding-left: 20px;
+  }
+  .tr.form {
+    display: block;
+    padding: 4px 0 16px 20px;
   }
   .dr {
     align-self: stretch;
@@ -331,6 +340,54 @@
   .in-row .help {
     margin: 0;
   }
+  .in-row .lbl {
+    min-width: 150px;
+  }
+  .in-row .err {
+    font-size: 12px;
+    color: #b03a2e;
+  }
+  /* text on the line reads left to right; figures stay right-aligned */
+  .in.txt {
+    text-align: left;
+    width: min(100%, 440px);
+  }
+  /* `.in` resets the font after `.mono` in the cascade; restate the family */
+  .in.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+  }
+  .in.sel {
+    text-align: left;
+    width: auto;
+    padding-right: 4px;
+    cursor: pointer;
+  }
+  .in:disabled {
+    color: #6b6f66;
+    border-bottom-color: #cfd8cc;
+  }
+  .in-row input[type="checkbox"] {
+    accent-color: #1c1e1a;
+    margin: 0;
+    align-self: center;
+  }
+  .logs {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #6b6f66;
+  }
+  .logs summary {
+    cursor: pointer;
+  }
+  .logs pre {
+    margin: 6px 0 0;
+    font-size: 11px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 240px;
+    overflow: auto;
+  }
 
   /* two-column ledger block: label ‖ figure */
   .kv .tr {
@@ -373,6 +430,10 @@
     }
     .tr.sub .k {
       padding-left: 16px;
+    }
+    .tr.form {
+      padding: 0 0 12px;
+      border-bottom: 1px solid #cfd8cc;
     }
     .c {
       display: grid;
@@ -454,6 +515,13 @@
     .in-row {
       flex-wrap: wrap;
     }
+    .in-row .lbl {
+      min-width: 0;
+      flex-basis: 100%;
+    }
+    .in.txt {
+      width: 100%;
+    }
   }
 
   /* column templates, desktop */
@@ -462,6 +530,13 @@
   }
   .inv .tr {
     grid-template-columns: 1fr 110px 5px 190px 130px 150px 170px 110px;
+  }
+  /* live registry: no name column — the wallet is the key */
+  .reg .tr {
+    grid-template-columns: minmax(120px, 1fr) 5px 150px 110px 150px 200px 160px;
+  }
+  .tok .tr {
+    grid-template-columns: 1fr 5px 130px 130px 170px 110px;
   }
   .jr .tr {
     grid-template-columns: 130px 1fr 1fr 5px 110px 260px 90px 100px;

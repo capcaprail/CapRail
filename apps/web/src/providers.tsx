@@ -1,13 +1,22 @@
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react'
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { type ReactNode, useMemo, useRef } from 'react'
-import { createApiClient } from './api/client.ts'
+import { createContext, type ReactNode, useContext, useMemo, useRef } from 'react'
+import { type ApiClient, createApiClient } from './api/client.ts'
 import { createQueryClient } from './api/query.ts'
 import { SessionProvider } from './auth/SessionProvider.tsx'
 import { sessionStore } from './auth/session.ts'
 import { webConfig } from './config.ts'
 import '@solana/wallet-adapter-react-ui/styles.css'
+
+const ApiContext = createContext<ApiClient | null>(null)
+
+// The same client the session signs in with, for the screens' own reads.
+export function useApi(): ApiClient {
+  const api = useContext(ApiContext)
+  if (api === null) throw new Error('useApi outside Providers')
+  return api
+}
 
 // `wallets={[]}` on purpose: Phantom, Solflare and Backpack register themselves
 // through Wallet Standard, and `@solana/wallet-adapter-wallets` would add
@@ -28,9 +37,11 @@ export function Providers({ children }: { children: ReactNode }) {
       <WalletProvider wallets={[]} autoConnect>
         <WalletModalProvider>
           <QueryClientProvider client={queryClient}>
-            <SessionProvider api={api} store={store}>
-              {children}
-            </SessionProvider>
+            <ApiContext.Provider value={api}>
+              <SessionProvider api={api} store={store}>
+                {children}
+              </SessionProvider>
+            </ApiContext.Provider>
           </QueryClientProvider>
         </WalletModalProvider>
       </WalletProvider>

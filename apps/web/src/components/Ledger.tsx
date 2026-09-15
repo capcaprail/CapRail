@@ -12,7 +12,7 @@ export function Table({
   children,
   ...rest
 }: {
-  kind?: 'cap' | 'inv' | 'jr' | 'off' | 'my' | 'kv'
+  kind?: 'cap' | 'inv' | 'jr' | 'off' | 'my' | 'kv' | 'reg' | 'tok'
   className?: string
   children: ReactNode
 } & Record<`data-${string}`, string | undefined>) {
@@ -28,7 +28,8 @@ export function Row({
   className,
   children,
 }: {
-  kind?: 'hd' | 'sub' | 'tot' | 'empty'
+  /** `form`: a row that spans the table — a form opened under an entry. */
+  kind?: 'hd' | 'sub' | 'tot' | 'empty' | 'form'
   className?: string
   children: ReactNode
 }) {
@@ -136,17 +137,20 @@ export function Stamp({ reason }: { reason: string }) {
 export function Action({
   inert,
   red,
+  submit,
   onClick,
   children,
 }: {
   inert?: boolean
   red?: boolean
+  /** The form's submit — Enter in a field triggers it too. */
+  submit?: boolean
   onClick?: () => void
   children: ReactNode
 }) {
   return (
     <button
-      type="button"
+      type={submit ? 'submit' : 'button'}
       className={cx('act', inert && 'inert', red && 'red')}
       onClick={onClick}
       disabled={inert}

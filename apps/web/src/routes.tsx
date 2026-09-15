@@ -3,15 +3,17 @@ import { Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom'
 import { RequireCompanyRole, RequireSession } from './auth/guards.tsx'
 import { useSession } from './auth/SessionProvider.tsx'
 import { companyMemberships, landingFor } from './auth/session.ts'
+import { CompanyPanel } from './company/Panel.tsx'
+import { CompanySetup, IssueToken } from './company/setup/CompanySetup.tsx'
+import { webConfig } from './config.ts'
 import { short } from './format.ts'
 import { Cabinet } from './screens/Cabinet.tsx'
 import { CompanyChooser } from './screens/CompanyChooser.tsx'
 import { Landing } from './screens/Landing.tsx'
 import { Market } from './screens/Market.tsx'
-import { Register } from './screens/Register.tsx'
 
-// Routes by role (FR-017). The screens under them are still the M0 mock-ups until
-// US1 puts live data behind them; the guards are already the real ones.
+// Routes by role (FR-017). The company panel is live (US1); the cabinet and the
+// market are still the M0 mock-ups until US2.
 export function AppRoutes() {
   return (
     <Routes>
@@ -26,10 +28,26 @@ export function AppRoutes() {
           }
         />
         <Route
-          path="company/:companyId/*"
+          path="company/new"
+          element={
+            <RequireSession>
+              <CompanySetup />
+            </RequireSession>
+          }
+        />
+        <Route
+          path="company/:companyId/token"
+          element={
+            <RequireCompanyRole allowed={['admin']}>
+              <IssueToken />
+            </RequireCompanyRole>
+          }
+        />
+        <Route
+          path="company/:companyId"
           element={
             <RequireCompanyRole>
-              <Register />
+              <CompanyPanel />
             </RequireCompanyRole>
           }
         />
@@ -60,10 +78,13 @@ function Layout() {
   const { setVisible } = useWalletModal()
   const item = ({ isActive }: { isActive: boolean }) => (isActive ? 'cur' : 'oth')
   const companies = session === null ? [] : companyMemberships(session.memberships)
+  const rpcHost = new URL(webConfig().rpcUrl).host
 
   return (
     <div className="page">
-      <div className="proto">Prototype — mock data. Not connected to any network.</div>
+      <div className="proto">
+        Node <span className="mono">{rpcHost}</span> · transactions are signed in your wallet
+      </div>
       <nav className="nav">
         {session === null ? (
           <NavLink to="/" end className={item}>
@@ -71,11 +92,12 @@ function Layout() {
           </NavLink>
         ) : (
           <>
-            {companies.length > 0 && (
-              <NavLink to={landingFor(session.memberships)} className={item}>
-                Company
-              </NavLink>
-            )}
+            <NavLink
+              to={companies.length > 0 ? landingFor(session.memberships) : '/company'}
+              className={item}
+            >
+              Company
+            </NavLink>
             <NavLink to="/cabinet" className={item}>
               Cabinet
             </NavLink>

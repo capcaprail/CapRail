@@ -19,6 +19,7 @@ export function Cabinet() {
   const vestedShare = (me.vested / me.holding.shares) * 100
   return (
     <>
+      <div className="proto">Prototype — mock data until the market (US2); not this network.</div>
       <h1>{me.label}</h1>
       <div className="sub">
         <span className="mono">{short(me.wallet)}</span> · admitted until {me.admittedUntil} ·{' '}

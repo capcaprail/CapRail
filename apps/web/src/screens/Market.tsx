@@ -33,6 +33,7 @@ export function Market() {
 
   return (
     <>
+      <div className="proto">Prototype — mock data until the market (US2); not this network.</div>
       <h1>
         Market · {company.name} · {company.symbol}
       </h1>

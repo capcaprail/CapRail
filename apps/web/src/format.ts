@@ -26,3 +26,14 @@ export const parseCents = (raw: string): number => {
   const n = Number.parseFloat(raw.replace(/[^0-9.]/g, ''))
   return Number.isNaN(n) ? 0 : Math.round(n * 100)
 }
+
+/** ISO time → `2026-09-14`, UTC. */
+export const utcDate = (iso: string): string => iso.slice(0, 10)
+
+/** ISO time → `2026-09-14 12:34 UTC`. */
+export const utcDateTime = (iso: string): string => {
+  const date = new Date(iso)
+  const hh = String(date.getUTCHours()).padStart(2, '0')
+  const mm = String(date.getUTCMinutes()).padStart(2, '0')
+  return `${date.toISOString().slice(0, 10)} ${hh}:${mm} UTC`
+}

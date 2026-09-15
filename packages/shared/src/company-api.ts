@@ -51,6 +51,21 @@ export const INVESTOR_STATUSES = ['none', 'approved', 'revoked'] as const
 export const investorStatusSchema = z.enum(INVESTOR_STATUSES)
 export type InvestorStatus = z.infer<typeof investorStatusSchema>
 
+// `investor_type` is a u8 on chain with no meaning to the program (FR-002: a reference
+// field for reports). The meaning is fixed here so the panel and the report (US5) agree;
+// 0 is "not set" — what a record written without a type reads back as.
+export const INVESTOR_TYPES = [
+  { code: 0, label: 'not set' },
+  { code: 1, label: 'individual' },
+  { code: 2, label: 'entity' },
+  { code: 3, label: 'fund' },
+] as const
+export type InvestorTypeCode = (typeof INVESTOR_TYPES)[number]['code']
+
+export function investorTypeLabel(code: number): string {
+  return INVESTOR_TYPES.find((type) => type.code === code)?.label ?? `type ${code}`
+}
+
 export const investorViewSchema = z.object({
   mint: z.string().min(1),
   wallet: walletAddressSchema,

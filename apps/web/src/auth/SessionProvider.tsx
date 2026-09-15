@@ -1,4 +1,4 @@
-import type { WalletAddress } from '@caprail/shared'
+import type { Membership, WalletAddress } from '@caprail/shared'
 import { useWallet } from '@solana/wallet-adapter-react'
 import {
   createContext,
@@ -32,6 +32,10 @@ export type SessionContextValue = {
   canSign: boolean
   signIn: () => Promise<void>
   signOut: () => void
+  // A role this key just took on chain (it created a company): the token is a
+  // snapshot from sign-in and the API re-checks the index on every request anyway,
+  // so the guards learn it now instead of after a second signature.
+  addMembership: (membership: Membership) => void
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null)
@@ -120,6 +124,25 @@ export function SessionProvider({ api, store, children }: SessionProviderProps) 
     void disconnect().catch(() => undefined)
   }, [store, wallet, disconnect])
 
+  const addMembership = useCallback(
+    (membership: Membership) => {
+      setState((current) => {
+        if (current.kind !== 'signed-in') return current
+        const held = current.session.memberships.some(
+          (m) => m.companyId === membership.companyId && m.role === membership.role,
+        )
+        if (held) return current
+        const session = {
+          ...current.session,
+          memberships: [...current.session.memberships, membership],
+        }
+        store.save(session)
+        return { kind: 'signed-in', session }
+      })
+    },
+    [store],
+  )
+
   const value = useMemo<SessionContextValue>(
     () => ({
       state,
@@ -130,8 +153,9 @@ export function SessionProvider({ api, store, children }: SessionProviderProps) 
       canSign: wallet !== null && signMessage !== undefined,
       signIn,
       signOut,
+      addMembership,
     }),
-    [state, wallet, signMessage, signIn, signOut],
+    [state, wallet, signMessage, signIn, signOut, addMembership],
   )
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
