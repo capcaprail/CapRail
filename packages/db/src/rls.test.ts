@@ -41,6 +41,17 @@ const policy = (name: string, table: string) =>
     `CREATE POLICY "${name}" ON "${table}" AS PERMISSIVE FOR (\\w+) TO "caprail_api" (.*);`,
   )
 
+// The definition in force: the CREATE, or the last ALTER POLICY after it.
+const policyInForce = (name: string, table: string): string | undefined =>
+  [
+    ...sql.matchAll(
+      new RegExp(
+        `(?:CREATE|ALTER) POLICY "${name}" ON "${table}" (?:AS PERMISSIVE FOR \\w+ )?TO "?caprail_api"? (.*);`,
+        'g',
+      ),
+    ),
+  ].at(-1)?.[1]
+
 describe('migrations', () => {
   it('cover every table in the schema', () => {
     expect(tables).toEqual([...SERVICE_TABLES, ...INDEX_TABLES].sort())
@@ -74,12 +85,12 @@ describe('migrations', () => {
   })
 
   it('scope every index table for the api role by app.company_id, the rest by app.wallet', () => {
-    const company = `nullif(current_setting('app.company_id', true), '')::bigint`
+    const company = `nullif(current_setting('app.company_id', true), '')::numeric`
     const wallet = `nullif(current_setting('app.wallet', true), '')`
     for (const table of INDEX_TABLES) {
       const select = policy(`${table}_api_select`, table).exec(sql)
       expect(select?.[1], table).toBe('SELECT')
-      const using = select?.[2] ?? ''
+      const using = policyInForce(`${table}_api_select`, table) ?? ''
       expect(using, table).toContain(`USING ("${table}"."company_id" = ${company} OR `)
       // Either the wallet itself or membership through `companies` (which is filtered
       // by the same wallet) — never the whole table.

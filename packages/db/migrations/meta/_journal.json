@@ -15,6 +15,13 @@
       "when": 1789392774895,
       "tag": "0001_us1_index",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789408802036,
+      "tag": "0002_company_id_u64",
+      "breakpoints": true
     }
   ]
 }

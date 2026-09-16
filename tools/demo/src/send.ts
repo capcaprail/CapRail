@@ -19,6 +19,8 @@ export type Landed = {
   readonly slot: number
   /** Unix seconds of the block, `undefined` when the node has no time for the slot yet. */
   readonly blockTime: number | undefined
+  /** Wall clock (ms) when this client saw the confirmation — the start of the panel's delay (SC-003/004). */
+  readonly confirmedAt: number
   readonly feeLamports: number | undefined
   readonly computeUnits: number | undefined
   readonly logs: readonly string[]
@@ -85,6 +87,7 @@ export function reasonFromLogs(
 async function landed(
   connection: Connection,
   signature: string,
+  confirmedAt: number,
 ): Promise<Landed & { err: unknown }> {
   // `maxSupportedTransactionVersion` is required: the transactions are v0, and
   // without it the node answers `null` for every one of them.
@@ -98,6 +101,7 @@ async function landed(
     signature,
     slot: detail.slot,
     blockTime: detail.blockTime ?? undefined,
+    confirmedAt,
     feeLamports: detail.meta?.fee,
     computeUnits: detail.meta?.computeUnitsConsumed,
     logs: transaction.logs,
@@ -148,7 +152,7 @@ export async function send(
     if (error instanceof Error) throw error
     failed = true
   }
-  const detail = await landed(connection, signature)
+  const detail = await landed(connection, signature, Date.now())
   if (failed) {
     const parsed = reasonFromLogs(detail.logs)
     throw new TransactionRefused({ ...detail, reason: parsed?.reason, code: parsed?.code })

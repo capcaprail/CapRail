@@ -22,7 +22,7 @@ import {
   tokenAddresses,
 } from '@caprail/chain'
 import { createAssociatedTokenAccountIdempotentInstruction } from '@solana/spl-token'
-import type { Keypair, PublicKey } from '@solana/web3.js'
+import { type Keypair, type PublicKey, SystemProgram } from '@solana/web3.js'
 import { chainTime, type DemoContext, fund } from '../context.ts'
 import { expectRefusal, type Refused, type Sent, submit, submitPlan } from '../send.ts'
 
@@ -44,6 +44,8 @@ export type Us1Transactions = {
 }
 
 export type Us1Result = {
+  /** The API's tenant key: the u64 the company was created with. */
+  readonly companyId: bigint
   readonly token: Token
   readonly transactions: Us1Transactions
 }
@@ -63,25 +65,74 @@ const ONE_YEAR = 365n * 24n * 3600n
 
 export type Log = (line: string) => void
 
-/** SOL each key gets. Generous locally; from a wallet on devnet, this is the budget. */
-const SOL = { admin: 5, officer: 0.5, investor: 0.5 } as const
+/**
+ * SOL each key gets. Generous locally, where the faucet is free. On a public network
+ * the money is the deploy wallet's, so the budget is what a run actually spends: the
+ * admin pays the company, the token and six token accounts (≈ 0.03 SOL), the officer
+ * eight investor records, the investors only fees — and the rest comes back (`refundKeys`).
+ */
+const SOL = {
+  local: { admin: 5, officer: 0.5, investor: 0.5 },
+  remote: { admin: 0.2, officer: 0.1, investor: 0.05 },
+} as const
+
+function fundingPlan(ctx: DemoContext): [Keypair, number][] {
+  const { keys } = ctx
+  const sol = ctx.local ? SOL.local : SOL.remote
+  return [
+    [keys.admin, sol.admin],
+    [keys.complianceOfficer, sol.officer],
+    [keys.alice, sol.investor],
+    [keys.bob, sol.investor],
+  ]
+}
 
 export async function fundKeys(
   ctx: DemoContext,
   payer: Keypair | undefined,
   log: Log,
 ): Promise<void> {
-  const { keys, connection } = ctx
-  const plan: [Keypair, number][] = [
-    [keys.admin, SOL.admin],
-    [keys.complianceOfficer, SOL.officer],
-    [keys.alice, SOL.investor],
-    [keys.bob, SOL.investor],
-  ]
-  for (const [key, sol] of plan) {
-    const ok = await fund(connection, key.publicKey, sol, payer)
+  for (const [key, sol] of fundingPlan(ctx)) {
+    const ok = await fund(ctx.connection, key.publicKey, sol, payer)
     if (!ok) log(`  airdrop to ${key.publicKey.toBase58()} failed — continuing on what it has`)
   }
+}
+
+/**
+ * What the disposable keys did not spend goes back to the payer. The keys are
+ * thrown away after the run; on devnet, where the faucet is rationed, leaving
+ * SOL on them would be the most expensive line of the demo. Rent locked in
+ * token accounts stays where it is — that is the cost of the run.
+ */
+export async function refundKeys(ctx: DemoContext, payer: Keypair, log: Log): Promise<number> {
+  const { connection } = ctx
+  // One signature per refund; the network's base fee.
+  const fee = 5000
+  let refunded = 0
+  for (const [key] of fundingPlan(ctx)) {
+    const lamports = await connection.getBalance(key.publicKey, 'confirmed')
+    if (lamports <= fee) continue
+    try {
+      await submit(
+        connection,
+        key.publicKey,
+        [
+          SystemProgram.transfer({
+            fromPubkey: key.publicKey,
+            toPubkey: payer.publicKey,
+            lamports: lamports - fee,
+          }),
+        ],
+        [key],
+      )
+      refunded += lamports - fee
+    } catch (error) {
+      log(
+        `  refund from ${key.publicKey.toBase58()} failed: ${error instanceof Error ? error.message : String(error)}`,
+      )
+    }
+  }
+  return refunded
 }
 
 export async function setStatus(
@@ -277,6 +328,7 @@ export async function runUs1(ctx: DemoContext, log: Log): Promise<Us1Result> {
   log(`  balances: alice ${alice}, bob ${bob}, stranger ${stranger}`)
 
   return {
+    companyId,
     token,
     transactions: {
       createCompany,

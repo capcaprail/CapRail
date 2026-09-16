@@ -45,7 +45,7 @@ export const apiRole = pgRole('caprail_api')
 // only for admin / compliance-officer sessions of that company; an investor session
 // carries the wallet alone and sees its own rows. '' (the value `withTenant` writes
 // for an absent dimension) becomes NULL, and NULL matches nothing.
-const scopedCompanyId = sql`nullif(current_setting('app.company_id', true), '')::bigint`
+const scopedCompanyId = sql`nullif(current_setting('app.company_id', true), '')::numeric`
 const scopedWallet = sql`nullif(current_setting('app.wallet', true), '')`
 
 const apiSelect = (table: string, using: SQL) =>
@@ -92,11 +92,12 @@ export const authNonces = pgTable(
 
 // Mirror of `Company`. `company_id` is the u64 the creator chose and the PDA seed, so
 // it is unique on chain; it is also the tenant key (`app.company_id`, `/companies/:id`,
-// JWT memberships). Events carry the PDA, hence both columns.
+// JWT memberships). Events carry the PDA, hence both columns. The id is a full u64
+// like the amounts — the first devnet company above 2^63 did not fit an int8 (T032).
 export const companies = pgTable(
   'companies',
   {
-    companyId: bigint('company_id', { mode: 'bigint' }).primaryKey(),
+    companyId: u64('company_id').primaryKey(),
     company: text('company').notNull().unique(),
     admin: text('admin').notNull(),
     complianceOfficer: text('compliance_officer').notNull(),
@@ -133,7 +134,7 @@ export const tokens = pgTable(
   'tokens',
   {
     mint: text('mint').primaryKey(),
-    companyId: bigint('company_id', { mode: 'bigint' })
+    companyId: u64('company_id')
       .notNull()
       .references(() => companies.companyId),
     treasury: text('treasury').notNull(),
@@ -167,7 +168,7 @@ export const policyVersions = pgTable(
       .notNull()
       .references(() => tokens.mint),
     version: integer('version').notNull(),
-    companyId: bigint('company_id', { mode: 'bigint' })
+    companyId: u64('company_id')
       .notNull()
       .references(() => companies.companyId),
     requireAccreditation: boolean('require_accreditation').notNull(),
@@ -194,7 +195,7 @@ export const investors = pgTable(
       .notNull()
       .references(() => tokens.mint),
     wallet: text('wallet').notNull(),
-    companyId: bigint('company_id', { mode: 'bigint' })
+    companyId: u64('company_id')
       .notNull()
       .references(() => companies.companyId),
     status: investorStatus('status').notNull(),
@@ -231,7 +232,7 @@ export const investorStatusEvents = pgTable(
       .notNull()
       .references(() => tokens.mint),
     wallet: text('wallet').notNull(),
-    companyId: bigint('company_id', { mode: 'bigint' })
+    companyId: u64('company_id')
       .notNull()
       .references(() => companies.companyId),
     status: investorStatus('status').notNull(),
@@ -267,7 +268,7 @@ export const transferAttempts = pgTable(
     mint: text('mint')
       .notNull()
       .references(() => tokens.mint),
-    companyId: bigint('company_id', { mode: 'bigint' })
+    companyId: u64('company_id')
       .notNull()
       .references(() => companies.companyId),
     sourceOwner: text('source_owner'),
@@ -332,7 +333,7 @@ export const holdings = pgTable(
       .notNull()
       .references(() => tokens.mint),
     wallet: text('wallet').notNull(),
-    companyId: bigint('company_id', { mode: 'bigint' })
+    companyId: u64('company_id')
       .notNull()
       .references(() => companies.companyId),
     amount: u64('amount').notNull(),

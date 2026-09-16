@@ -37,6 +37,8 @@ export type Admission = {
   readonly byReason: Readonly<Record<string, number>>
   /** Per kind: how many refused, and the first refusal in full — a fixture for the log parser. */
   readonly byKind: Readonly<Record<Kind, { refused: number; sample: Refused | undefined }>>
+  /** Every refusal with the wallet it was addressed to — what the panel must show (SC-004). */
+  readonly refusals: readonly { readonly recipient: string; readonly refused: Refused }[]
   /** Token balances did not move: recipients stayed at 0, the sender at what it had. */
   readonly balancesUnchanged: boolean
   readonly feeLamports: readonly number[]
@@ -49,6 +51,8 @@ export type Allowed = {
   readonly feeLamports: readonly number[]
   /** `getBalance` of the sender before and after — the fees are all it paid. */
   readonly senderLamportsDelta: number
+  /** Every transfer that went through — what the cap table must reflect (SC-003). */
+  readonly landed: readonly Sent[]
 }
 
 /** One status change and the next transfer after it. */
@@ -170,6 +174,11 @@ export async function measureAdmission(
     passed: outcomes.flatMap((o) => (o.passed ? [o.passed.signature] : [])),
     byReason: count(refused.map((o) => o.refused?.reason)),
     byKind,
+    refusals: refused.flatMap((o) =>
+      o.refused === undefined
+        ? []
+        : [{ recipient: recipients[o.kind].toBase58(), refused: o.refused }],
+    ),
     balancesUnchanged: senderAfter === senderBefore && recipientBalances.every((b) => b === 0n),
     feeLamports: refused.flatMap((o) =>
       o.refused?.feeLamports === undefined ? [] : [o.refused.feeLamports],
@@ -210,6 +219,7 @@ export async function measureAllowed(
     refused: outcomes.flatMap((o) => (o.refused === undefined ? [] : [o.refused])),
     feeLamports: sent.flatMap((s) => (s.feeLamports === undefined ? [] : [s.feeLamports])),
     senderLamportsDelta: lamportsBefore - lamportsAfter,
+    landed: sent,
   }
 }
 
