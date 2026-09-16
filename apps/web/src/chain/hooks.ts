@@ -49,8 +49,9 @@ export function useTransaction(): TransactionRunner {
 }
 
 // The index trails the chain by the worker's round trip (a second or two, up to a
-// backfill pass of 30 s if the websocket dropped). Until the feed arrives (T031),
-// a settled transaction refetches the panel a few times over that window.
+// backfill pass of 30 s if the websocket dropped). The feed (`company/feed.ts`) is
+// what normally moves the page; this refetch is the fallback for the seconds a
+// stream may be down, so the transaction the user just signed always shows up.
 export const REFRESH_DELAYS_MS = [0, 2_000, 5_000, 12_000, 30_000] as const
 
 export function useRefreshAfterTransaction(companyId: string): () => void {

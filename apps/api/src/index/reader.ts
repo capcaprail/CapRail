@@ -410,8 +410,9 @@ export function drizzleIndexReader(db: Db): IndexReader {
         // on a mint they cannot see is indistinguishable from an unknown mint.
         const token = (
           await tx
-            .select({ companyId: tokens.companyId })
+            .select({ companyId: tokens.companyId, company: companies.company })
             .from(tokens)
+            .innerJoin(companies, eq(companies.companyId, tokens.companyId))
             .where(eq(tokens.mint, report.mint))
             .limit(1)
         )[0]
@@ -427,7 +428,9 @@ export function drizzleIndexReader(db: Db): IndexReader {
             outcome: 'rejected',
             reasonCode: report.reasonCode,
             origin: 'simulation',
-            fromTreasury: false,
+            // The same mark the worker gives a chain row: the treasury is the token
+            // account the company PDA owns, so a distribution names the PDA as source.
+            fromTreasury: report.sourceOwner === token.company,
             policyVersion: null,
             txSignature: null,
             eventIndex: 0,

@@ -90,3 +90,16 @@ export function isWalletAddress(value: unknown): value is WalletAddress {
 export const walletAddressSchema = z.custom<WalletAddress>(isWalletAddress, {
   message: 'expected a base58 ed25519 public key on the curve',
 })
+
+// Any Solana account address — a wallet or a PDA. Where the party may be a program's
+// account (the treasury a company PDA owns), this is the schema; where it must be a
+// signer, `walletAddressSchema`.
+export function isAddress(value: unknown): value is string {
+  if (typeof value !== 'string') return false
+  const bytes = decodeBase58(value)
+  return bytes !== null && bytes.length === 32
+}
+
+export const addressSchema = z.string().refine(isAddress, {
+  message: 'expected a base58 32-byte account address',
+})

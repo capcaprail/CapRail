@@ -68,8 +68,17 @@ describe('POST /attempts', () => {
       amount: '10',
       txSignature: null,
       blockTime: NOW.toISOString(),
+      fromTreasury: false,
       reportedBy: data.alice,
     })
+  })
+
+  it('marks a refused distribution as from the treasury when the source is the company PDA', async () => {
+    const { post, data } = build()
+    const res = await post(report(data, { sourceOwner: data.company.company }), data.admin)
+    expect(res.status).toBe(201)
+    const { id } = attemptReportResponseSchema.parse(await res.json())
+    expect(data.index.attempts.find((a) => a.id === id)).toMatchObject({ fromTreasury: true })
   })
 
   it('requires a session and validates the body', async () => {

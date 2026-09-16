@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { walletAddressSchema } from './primitives.ts'
+import { addressSchema, walletAddressSchema } from './primitives.ts'
 import { rejectionReasonSchema } from './reasons.ts'
 
 // Read models of the index as the API serves them (PLAN → API-контракти). u64
@@ -161,7 +161,8 @@ export const ATTEMPT_LOG_LINE_LENGTH = 1_000
 
 export const attemptReportSchema = z.object({
   mint: z.string().min(1),
-  sourceOwner: walletAddressSchema,
+  // The source may be the treasury, whose owner is the company PDA — off the curve.
+  sourceOwner: addressSchema,
   destOwner: walletAddressSchema,
   amount: u64StringSchema,
   reasonCode: rejectionReasonSchema,

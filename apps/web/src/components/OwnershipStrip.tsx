@@ -1,18 +1,22 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { pct, vhi } from '../format.ts'
-import type { Owner } from '../mockData.ts'
+import { pct } from '../format.ts'
 
 // The one visual idea: the whole company as a 28px bar. Treasury first as empty paper,
 // each owner a solid segment, the not-yet-vested part hatched. Segments whose label does
 // not fit are listed under the bar instead — measured, not guessed, so 1280 and 375 differ.
 
-export function OwnershipStrip({
-  owners,
-  labels,
-}: {
-  owners: Owner[]
-  labels: Record<string, string>
-}) {
+export type StripSegment = {
+  key: string
+  label: string
+  // Share of the whole, in percent.
+  sharePct: number
+  // Hatched part of this segment, in percent of the segment; null when not applicable.
+  unvestedPct: number | null
+  treasury: boolean
+  tip: string
+}
+
+export function OwnershipStrip({ segments }: { segments: StripSegment[] }) {
   const labelRow = useRef<HTMLDivElement>(null)
   const [hidden, setHidden] = useState<Set<string>>(new Set())
 
@@ -21,10 +25,10 @@ export function OwnershipStrip({
     if (!row) return
     const measure = () => {
       const next = new Set<string>()
-      for (const box of row.querySelectorAll<HTMLElement>('[data-wallet]')) {
+      for (const box of row.querySelectorAll<HTMLElement>('[data-key]')) {
         const text = box.firstElementChild
         if (text instanceof HTMLElement && text.scrollWidth > box.clientWidth) {
-          next.add(box.dataset.wallet ?? '')
+          next.add(box.dataset.key ?? '')
         }
       }
       setHidden((prev) => (sameSet(prev, next) ? prev : next))
@@ -35,53 +39,47 @@ export function OwnershipStrip({
     return () => observer.disconnect()
   }, [])
 
-  const listed = owners.filter((o) => hidden.has(o.wallet))
+  const listed = segments.filter((segment) => hidden.has(segment.key))
 
   return (
     <div className="mt-7">
       <div className="strip">
-        {owners.map((o, i) => (
+        {segments.map((segment, i) => (
           <div
-            key={o.wallet}
-            className={['seg', o.isTreasury && 'tre', i >= owners.length - 3 && 'r']
+            key={segment.key}
+            className={['seg', segment.treasury && 'tre', i >= segments.length - 3 && 'r']
               .filter(Boolean)
               .join(' ')}
-            style={{ flex: `${o.sharePct} 0 0` }}
+            style={{ flex: `${segment.sharePct} 0 0` }}
           >
-            {o.unvested !== null && (
-              <div className="un hatch" style={{ width: `${(o.unvested / o.shares) * 100}%` }} />
+            {segment.unvestedPct !== null && segment.unvestedPct > 0 && (
+              <div className="un hatch" style={{ width: `${segment.unvestedPct}%` }} />
             )}
-            <div className="tip">{tooltip(o, labels)}</div>
+            <div className="tip">{segment.tip}</div>
           </div>
         ))}
       </div>
       <div className="strip-l" ref={labelRow}>
-        {owners.map((o) => (
+        {segments.map((segment) => (
           <div
-            key={o.wallet}
+            key={segment.key}
             className="lb"
-            data-wallet={o.wallet}
-            style={{ flex: `${o.sharePct} 0 0` }}
+            data-key={segment.key}
+            style={{ flex: `${segment.sharePct} 0 0` }}
           >
-            <span style={{ visibility: hidden.has(o.wallet) ? 'hidden' : 'visible' }}>
-              {labels[o.wallet]} {pct(o.sharePct)}
+            <span style={{ visibility: hidden.has(segment.key) ? 'hidden' : 'visible' }}>
+              {segment.label} {pct(segment.sharePct)}
             </span>
           </div>
         ))}
       </div>
       {listed.length > 0 && (
         <div className="also">
-          also: {listed.map((o) => `${labels[o.wallet]} ${pct(o.sharePct)}`).join(', ')}
+          also: {listed.map((segment) => `${segment.label} ${pct(segment.sharePct)}`).join(', ')}
         </div>
       )}
     </div>
   )
-}
-
-function tooltip(o: Owner, labels: Record<string, string>): string {
-  const head = `${o.isTreasury ? 'Treasury (Varenholt Instruments)' : labels[o.wallet]} · ${vhi(o.shares)} · ${pct(o.sharePct)}`
-  if (o.isTreasury) return `${head} · not yet distributed`
-  return o.unvested !== null ? `${head} · of which ${vhi(o.unvested)} not yet vested` : head
 }
 
 function sameSet(a: Set<string>, b: Set<string>): boolean {

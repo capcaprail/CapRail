@@ -7,12 +7,14 @@ import {
   EmptyRows,
   Help,
   KV,
+  Note,
   Row,
+  Stamp,
   Table,
+  With,
 } from '../components/Ledger.tsx'
 import { dusd, pct, short, vhi } from '../format.ts'
-import { company, journal, me } from '../mockData.ts'
-import { JournalTable } from './Register.tsx'
+import { company, type JournalEntry, journal, me } from '../mockData.ts'
 
 export function Cabinet() {
   const mine = journal.filter((e) => e.from === me.label || e.to === me.label)
@@ -103,7 +105,7 @@ export function Cabinet() {
       </Help>
 
       <h2>My attempts</h2>
-      <JournalTable entries={mine.map((e) => ({ ...e, from: you(e.from), to: you(e.to) }))} />
+      <MockJournalTable entries={mine.map((e) => ({ ...e, from: you(e.from), to: you(e.to) }))} />
 
       <Actions className="mt-7">
         <Link to="/market" className="act">
@@ -115,3 +117,61 @@ export function Cabinet() {
 }
 
 const you = (name: string): string => (name === me.label ? `${name} (you)` : name)
+
+// The M0 mock-up's journal, kept here until the cabinet reads its own attempts (US2);
+// the company's live journal is `company/journal/Journal.tsx`.
+function MockJournalTable({ entries }: { entries: JournalEntry[] }) {
+  return (
+    <Table kind="jr">
+      <Row kind="hd">
+        <Cell>When (UTC)</Cell>
+        <Cell>From</Cell>
+        <Cell>To</Cell>
+        <DoubleRule />
+        <Cell fig>Amount</Cell>
+        <Cell>Outcome</Cell>
+        <Cell>Origin</Cell>
+        <Cell>Signature</Cell>
+      </Row>
+      {entries.map((e) => (
+        <Row key={`${e.whenUtc}-${e.from}-${e.to}`}>
+          <Cell k date>
+            {e.whenUtc}
+          </Cell>
+          <Cell label="From">{e.from}</Cell>
+          <Cell label="To">
+            {e.toNote ? (
+              <With>
+                <span className="mono">{e.to}</span>
+                <Note>{e.toNote}</Note>
+              </With>
+            ) : (
+              e.to
+            )}
+          </Cell>
+          <DoubleRule />
+          <Cell fig label="Amount">
+            {vhi(e.amount)}
+          </Cell>
+          <Cell label="Outcome">
+            {e.outcome.kind === 'refused' ? (
+              <Stamp reason={e.outcome.reason} />
+            ) : (
+              <With>
+                <span className="muted">settled</span>
+                <Note>{e.outcome.detail}</Note>
+              </With>
+            )}
+          </Cell>
+          <Cell label="Origin" muted={e.origin === 'simulation'}>
+            {e.origin}
+          </Cell>
+          <Cell label="Signature" mono={e.signature !== null}>
+            {e.signature ?? '—'}
+          </Cell>
+        </Row>
+      ))}
+      <EmptyRows before={3} after={4} />
+    </Table>
+  )
+}

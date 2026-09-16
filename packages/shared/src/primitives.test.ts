@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  addressSchema,
   decodeBase58,
   encodeBase58,
+  isAddress,
   isOnCurve,
   isWalletAddress,
   walletAddressSchema,
@@ -90,5 +92,15 @@ describe('encodeBase58', () => {
     }
     expect(encodeBase58(new Uint8Array([0, 0, 1]))).toBe('112')
     expect(encodeBase58(new Uint8Array())).toBe('')
+  })
+})
+
+describe('addressSchema', () => {
+  it('accepts a wallet and a PDA alike, rejects anything that is not 32 bytes', () => {
+    expect(addressSchema.parse(PROGRAM_ID)).toBe(PROGRAM_ID)
+    expect(addressSchema.parse(PDA_COMPANY)).toBe(PDA_COMPANY)
+    expect(isAddress(PDA_TREASURY)).toBe(true)
+    expect(addressSchema.safeParse('abc').success).toBe(false)
+    expect(isAddress(42)).toBe(false)
   })
 })

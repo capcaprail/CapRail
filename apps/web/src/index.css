@@ -382,6 +382,7 @@
   }
   .logs pre {
     margin: 6px 0 0;
+    text-align: left;
     font-size: 11px;
     white-space: pre-wrap;
     word-break: break-word;
@@ -525,8 +526,9 @@
   }
 
   /* column templates, desktop */
+  /* live cap table: the wallet is the key, the source is the last column */
   .cap .tr {
-    grid-template-columns: 1fr 110px 5px 130px 90px 130px 150px;
+    grid-template-columns: minmax(120px, 1fr) 5px 160px 100px 150px 150px 130px;
   }
   .inv .tr {
     grid-template-columns: 1fr 110px 5px 190px 130px 150px 170px 110px;
@@ -539,7 +541,14 @@
     grid-template-columns: 1fr 5px 130px 130px 170px 110px;
   }
   .jr .tr {
-    grid-template-columns: 130px 1fr 1fr 5px 110px 260px 90px 100px;
+    grid-template-columns: 150px 1fr 1fr 5px 140px 220px 100px 100px;
+  }
+  /* a refusal's logs open under the stamp, inside the outcome cell */
+  .jr .logs {
+    margin-top: 12px;
+  }
+  .jr .logs pre {
+    max-height: 160px;
   }
   .off .tr {
     grid-template-columns: 1fr 130px 5px 100px 100px 100px 140px 110px 140px 100px;

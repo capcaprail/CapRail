@@ -73,8 +73,10 @@ export {
   u64StringSchema,
 } from './company-api.ts'
 export {
+  addressSchema,
   decodeBase58,
   encodeBase58,
+  isAddress,
   isOnCurve,
   isWalletAddress,
   type WalletAddress,

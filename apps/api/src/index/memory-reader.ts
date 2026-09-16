@@ -251,7 +251,7 @@ export function memoryIndexReader(index: MemoryIndex): IndexReader {
         outcome: 'rejected',
         reasonCode: report.reasonCode,
         origin: 'simulation',
-        fromTreasury: false,
+        fromTreasury: report.sourceOwner === company.company,
         policyVersion: null,
         txSignature: null,
         slot: null,

@@ -6,12 +6,16 @@ import { useRefreshAfterTransaction } from '../chain/hooks.ts'
 import { Cell, DoubleRule, EmptyRows, Help, Row, Table } from '../components/Ledger.tsx'
 import { short, utcDateTime } from '../format.ts'
 import { isCatchingUp, useCompany, useInvestors } from './api.ts'
+import { CapTableSection } from './cap-table/CapTable.tsx'
+import { type FeedState, useCompanyFeed } from './feed.ts'
 import { fromBaseUnits } from './fields.ts'
+import { JournalSection } from './journal/Journal.tsx'
 import { PolicySection } from './policy/PolicyForm.tsx'
 import { RegistrySection } from './registry/Registry.tsx'
 
-// The company panel on the index (FR-001…FR-004). Everything here is what the
-// worker read from the chain; every action is a transaction the wallet signs.
+// The company panel on the index (FR-001…FR-004, FR-007, FR-008). Everything here
+// is what the worker read from the chain, kept current by the feed; every action is
+// a transaction the wallet signs.
 
 export function CompanyPanel() {
   const { companyId = '' } = useParams()
@@ -19,6 +23,7 @@ export function CompanyPanel() {
   const company = useCompany(companyId)
   const investors = useInvestors(companyId)
   const refresh = useRefreshAfterTransaction(companyId)
+  const feed = useCompanyFeed(companyId)
 
   if (session === null) return null
   const roles = rolesIn(session, companyId)
@@ -61,7 +66,8 @@ export function CompanyPanel() {
         <span className="mono" title={view.company}>
           {short(view.company)}
         </span>{' '}
-        · you are {roles.map((role) => role.replace('_', ' ')).join(' and ')}
+        · you are {roles.map((role) => role.replace('_', ' ')).join(' and ')} ·{' '}
+        <FeedMark state={feed} />
       </div>
       <div className="sub muted mt-1">
         Administrator{' '}
@@ -92,13 +98,27 @@ export function CompanyPanel() {
         />
       ))}
 
-      <h2>Cap table</h2>
-      <Help>
-        Holdings are indexed from the chain as transfers settle; the live cap table and the transfer
-        journal are the next step of this milestone.
-      </Help>
+      <h2>Transfer journal</h2>
+      <JournalSection companyId={view.companyId} tokens={view.tokens} />
     </>
   )
+}
+
+// Whether the page is on the feed. `retrying` is said plainly: the page still
+// works, it is just not live until the stream is back.
+function FeedMark({ state }: { state: FeedState }) {
+  switch (state.kind) {
+    case 'open':
+      return <span title="the index streams changes to this page as they land">live</span>
+    case 'retrying':
+      return (
+        <span className="text-stamp" title={state.message}>
+          feed lost, reconnecting…
+        </span>
+      )
+    default:
+      return <span className="muted">connecting to the feed…</span>
+  }
 }
 
 function TokenTable({ view, isAdmin }: { view: CompanyView; isAdmin: boolean }) {
@@ -177,6 +197,9 @@ function TokenSections({
   const suffix = view.tokens.length > 1 ? ` · ${token.symbol}` : ''
   return (
     <>
+      <h2>Cap table{suffix}</h2>
+      <CapTableSection companyId={view.companyId} token={token} />
+
       <h2>Policy{suffix}</h2>
       <PolicySection
         companyPda={view.company}

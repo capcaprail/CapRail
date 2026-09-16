@@ -1,5 +1,6 @@
 import { type ApiErrorCode, apiErrorSchema } from '@caprail/shared'
 import type { z } from 'zod'
+import { type EventStreamOptions, openEventStream } from './sse.ts'
 
 export class ApiError extends Error {
   readonly code: ApiErrorCode
@@ -20,6 +21,11 @@ export type ApiClient = {
     schema: S,
     body?: unknown,
   ) => Promise<z.output<S>>
+  // An SSE subscription to `path` with the same bearer; `stop` closes it.
+  stream: (
+    path: string,
+    handlers: Pick<EventStreamOptions, 'onFrame' | 'onStatus'>,
+  ) => { stop: () => void }
 }
 
 export type ApiClientOptions = {
@@ -58,6 +64,14 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         )
       }
       return schema.parse(json)
+    },
+    stream(path, handlers) {
+      return openEventStream({
+        url: new URL(path, options.baseUrl),
+        token: () => options.token?.() ?? null,
+        fetch: doFetch,
+        ...handlers,
+      })
     },
   }
 }

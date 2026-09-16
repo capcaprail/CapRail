@@ -4,8 +4,8 @@ import type { Connection, VersionedTransaction } from '@solana/web3.js'
 // A plan from `packages/chain` → the ledger's verdict, through the wallet.
 //
 // Simulation comes first and is ours, not the wallet's: a refusal there has the
-// program's logs and reason, which the panel shows (and the journal will record as
-// `simulation`, T031). Only a plan that passes is put in front of the wallet, so the
+// program's logs and reason, which the panel shows and reports to the journal as
+// `simulation` (`POST /attempts`). Only a plan that passes is put in front of the wallet, so the
 // user is not asked to sign what the network would refuse.
 
 export type TxPhase = 'simulating' | 'signing' | 'confirming'
