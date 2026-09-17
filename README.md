@@ -16,21 +16,25 @@ is data in an account — changing it takes one transaction, not a reissue.
 
 ## What v0.1.0 does
 
-- Create a company and issue its equity token. The whole supply is minted once
-  into the company treasury and the mint authority is revoked: there is no
-  "mint more" instruction.
+- Create a company and issue its equity token (a company can have more than
+  one). The token is a Token-2022 mint with on-chain metadata; the whole supply
+  is minted once into the company treasury and the mint authority is revoked —
+  there is no "mint more" instruction. There is no freeze authority either: the
+  rule is the hook, not freezing.
 - Set the transfer policy: whether the recipient needs a valid admission. The
   ROFR flag exists in the policy but is refused by the program until ROFR is
   implemented — "ROFR on, no mechanism" is not a state the chain can be in.
-- Keep the investor registry: wallet, admission status, expiry, jurisdiction and
-  investor type (the last two are informational; transfers are not blocked on
-  them).
+- Keep the investor registry, per token: wallet, admission status, expiry,
+  jurisdiction and investor type (the last two are informational; transfers are
+  not blocked on them). The same wallet in two companies is two records.
 - Distribute tokens from the treasury — through the same hook as any other
   transfer.
 - Refuse a transfer to a wallet that is not in the registry, whose admission has
   expired or was revoked — balances of both sides unchanged, reason in the logs
-  (`NotAccredited`, `AccreditationExpired`, …). A revoked holder keeps what they
-  already hold and cannot receive more.
+  (`NotAccredited`, `AccreditationExpired`). A revoked holder keeps what they
+  already hold and cannot receive more. The rule checks the recipient: a
+  transfer back to the company treasury always passes, and a policy that does
+  not require admission lets every transfer through.
 - Show the live cap table and the transfer journal in the company panel, fed by
   an indexer: chain → worker → Postgres → API → event stream.
 
@@ -69,7 +73,7 @@ apps/worker             follows the chain and fills the index
 apps/api                Hono: wallet sign-in, company reads, SSE feed, simulation reports
 apps/web                React panel: company wizard, policy, registry, distribute, cap table, journal
 tools/demo              the US1 story as a script, with the measurements behind the numbers below
-fixtures                differential test data and recorded transaction logs
+fixtures                recorded transaction logs for the parser; the hook's account list, cross-checked between program and client
 scripts                 build, local validator, deploy and trace sweep (WSL)
 ```
 
@@ -118,8 +122,10 @@ wsl.exe -e bash /mnt/<drive>/<path-to-repo>/scripts/wsl-build.sh <build-sbf|idl|
 
 The artefact that goes to the network is the `cargo-build-sbf` one (SBPFv0):
 `anchor build` produces SBPFv3, which Agave 3.1.10 does not execute, and writes
-it to the same `.so`. Program tests run the real `.so` under `mollusk-svm` in
-`cargo test`, including a compute-unit gate for the hook. A local validator with
+it to the same `.so`. `idl` builds the IDL; `pnpm idl:sync` vendors it into
+`packages/chain`, and `pnpm idl:check` in the gate fails when the vendored copy
+drifts from the build (it is skipped where there is no `target/`). Program
+tests run the real `.so` under `mollusk-svm` in `cargo test`, including a compute-unit gate for the hook. A local validator with
 both programs in genesis (`scripts/wsl-localnet.sh`) and deployment
 (`scripts/wsl-deploy.sh`) require the program keypairs, which are not in the
 repository.
