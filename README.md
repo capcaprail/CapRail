@@ -141,6 +141,27 @@ pnpm demo:us1 -- --rpc devnet --payer <keypair.json> --api http://localhost:8787
 
 The exit code is the verdict.
 
+### The panel on GitHub Pages
+
+`.github/workflows/pages.yml` builds `apps/web` on every push to `main` and
+publishes it as a project site at `https://<owner>.github.io/<repo>/`. The api
+and the worker are not static and are hosted separately; the panel reaches the
+api through `VITE_API_URL`. Once, in the repository settings:
+
+- **Settings → Pages → Build and deployment → Source: GitHub Actions.**
+- **Settings → Secrets and variables → Actions → Variables:** `VITE_API_URL`
+  (required — the api's public origin; the build fails without it),
+  `VITE_DEVNET_RPC_URL` (optional; the node the panel sends transactions to —
+  it is public in the bundle, so no key; default: the public devnet node),
+  `PAGES_BASE_PATH` = `/` only for a custom domain.
+- On the api, `WEB_ORIGIN` must include the Pages origin
+  (`https://<owner>.github.io`), or the browser blocks every request with CORS.
+
+Pages has no rewrites: a deep link is served `404.html`, which is a copy of the
+app shell, and the router takes over from there — the document status of such
+a load is 404, which is expected. Locally, `BASE_PATH=/<repo>/ pnpm --filter
+@caprail/web build` reproduces the Pages build.
+
 ## Wallets — what to know
 
 - Sign-in is a signed message (one-time nonce, 5 minutes; the session token
