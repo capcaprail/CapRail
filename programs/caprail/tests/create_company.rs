@@ -206,8 +206,10 @@ fn refuses_to_recreate_an_existing_company() {
 /// розкладки має бути свідомою, а не побічним ефектом додавання поля.
 #[test]
 fn state_layouts_are_fixed_size() {
-    use caprail::state::{InvestorRecord, TokenConfig};
+    use caprail::state::{InvestorRecord, Offer, PlatformConfig, TokenConfig};
     assert_eq!(Company::SPACE, 8 + 8 + 32 + 32 + 32 + 4 + 1);
+    assert_eq!(PlatformConfig::SPACE, 8 + 32 + 32 + 32 + 2 + 1);
+    assert_eq!(Offer::SPACE, 8 + 32 + 32 + 8 + 8 + 8 + 8 + 8 + 1 + 8 + 1);
     assert_eq!(
         TokenConfig::SPACE,
         8 + 32 + 32 + 32 + (1 + 1 + 4) + 4 + 1 + 8 + 1
@@ -231,5 +233,23 @@ fn state_layouts_are_fixed_size() {
     assert_eq!(
         Company::find_address(7).0,
         Pubkey::find_program_address(&[b"company", &7u64.to_le_bytes()], &caprail::ID).0
+    );
+    assert_eq!(
+        PlatformConfig::find_address().0,
+        Pubkey::find_program_address(&[b"platform"], &caprail::ID).0
+    );
+    let seller = Pubkey::new_unique();
+    assert_eq!(
+        Offer::find_address(&mint, &seller, 9).0,
+        Pubkey::find_program_address(
+            &[
+                b"offer",
+                mint.as_ref(),
+                seller.as_ref(),
+                &9u64.to_le_bytes()
+            ],
+            &caprail::ID
+        )
+        .0
     );
 }

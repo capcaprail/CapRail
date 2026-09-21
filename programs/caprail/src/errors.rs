@@ -39,4 +39,8 @@ pub enum CaprailError {
     InvalidExpiry,
     #[msg("amount must be positive")]
     InvalidAmount,
+    #[msg("platform fee must be at most 1000 basis points")]
+    InvalidFee,
+    #[msg("offer needs a positive amount and price whose product fits in u64")]
+    InvalidOffer,
 }

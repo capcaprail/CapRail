@@ -855,6 +855,16 @@ export type Caprail = {
       "code": 6015,
       "name": "invalidAmount",
       "msg": "amount must be positive"
+    },
+    {
+      "code": 6016,
+      "name": "invalidFee",
+      "msg": "platform fee must be at most 1000 basis points"
+    },
+    {
+      "code": 6017,
+      "name": "invalidOffer",
+      "msg": "offer needs a positive amount and price whose product fits in u64"
     }
   ],
   "types": [
@@ -2200,6 +2210,16 @@ export const IDL: Caprail = {
       "code": 6015,
       "name": "invalidAmount",
       "msg": "amount must be positive"
+    },
+    {
+      "code": 6016,
+      "name": "invalidFee",
+      "msg": "platform fee must be at most 1000 basis points"
+    },
+    {
+      "code": 6017,
+      "name": "invalidOffer",
+      "msg": "offer needs a positive amount and price whose product fits in u64"
     }
   ],
   "types": [
