@@ -18,6 +18,7 @@
     "idl:sync": "node scripts/sync-idl.mjs",
     "idl:check": "node scripts/sync-idl.mjs --check",
     "demo:us1": "pnpm --filter @caprail/demo demo",
+    "demo:init-platform": "pnpm --filter @caprail/demo demo init-platform",
     "gate": "pnpm idl:check && pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {

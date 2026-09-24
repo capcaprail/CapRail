@@ -500,6 +500,63 @@ export type Caprail = {
       ]
     },
     {
+      "name": "initPlatform",
+      "discriminator": [
+        29,
+        22,
+        210,
+        225,
+        219,
+        114,
+        193,
+        169
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "platform",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  116,
+                  102,
+                  111,
+                  114,
+                  109
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "paymentMint"
+        },
+        {
+          "name": "feeTreasury"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "feeBps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
       "name": "setInvestorStatus",
       "discriminator": [
         191,
@@ -682,6 +739,19 @@ export type Caprail = {
       ]
     },
     {
+      "name": "platformConfig",
+      "discriminator": [
+        160,
+        78,
+        128,
+        0,
+        248,
+        83,
+        230,
+        160
+      ]
+    },
+    {
       "name": "tokenConfig",
       "discriminator": [
         92,
@@ -720,6 +790,19 @@ export type Caprail = {
         145,
         127,
         35
+      ]
+    },
+    {
+      "name": "platformInitialized",
+      "discriminator": [
+        16,
+        222,
+        212,
+        5,
+        213,
+        140,
+        112,
+        162
       ]
     },
     {
@@ -865,6 +948,11 @@ export type Caprail = {
       "code": 6017,
       "name": "invalidOffer",
       "msg": "offer needs a positive amount and price whose product fits in u64"
+    },
+    {
+      "code": 6018,
+      "name": "invalidPaymentMint",
+      "msg": "payment mint must transfer the exact amount: no transfer hook, no transfer fee"
     }
   ],
   "types": [
@@ -1108,6 +1196,66 @@ export type Caprail = {
           {
             "name": "updatedBy",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "platformConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "paymentMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "feeTreasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "feeBps",
+            "type": "u16"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "platformInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "platform",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "paymentMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "feeTreasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "feeBps",
+            "type": "u16"
+          },
+          {
+            "name": "initializedAt",
+            "type": "i64"
           }
         ]
       }
@@ -1855,6 +2003,63 @@ export const IDL: Caprail = {
       ]
     },
     {
+      "name": "initPlatform",
+      "discriminator": [
+        29,
+        22,
+        210,
+        225,
+        219,
+        114,
+        193,
+        169
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "platform",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  116,
+                  102,
+                  111,
+                  114,
+                  109
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "paymentMint"
+        },
+        {
+          "name": "feeTreasury"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "feeBps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
       "name": "setInvestorStatus",
       "discriminator": [
         191,
@@ -2037,6 +2242,19 @@ export const IDL: Caprail = {
       ]
     },
     {
+      "name": "platformConfig",
+      "discriminator": [
+        160,
+        78,
+        128,
+        0,
+        248,
+        83,
+        230,
+        160
+      ]
+    },
+    {
       "name": "tokenConfig",
       "discriminator": [
         92,
@@ -2075,6 +2293,19 @@ export const IDL: Caprail = {
         145,
         127,
         35
+      ]
+    },
+    {
+      "name": "platformInitialized",
+      "discriminator": [
+        16,
+        222,
+        212,
+        5,
+        213,
+        140,
+        112,
+        162
       ]
     },
     {
@@ -2220,6 +2451,11 @@ export const IDL: Caprail = {
       "code": 6017,
       "name": "invalidOffer",
       "msg": "offer needs a positive amount and price whose product fits in u64"
+    },
+    {
+      "code": 6018,
+      "name": "invalidPaymentMint",
+      "msg": "payment mint must transfer the exact amount: no transfer hook, no transfer fee"
     }
   ],
   "types": [
@@ -2463,6 +2699,66 @@ export const IDL: Caprail = {
           {
             "name": "updatedBy",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "platformConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "paymentMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "feeTreasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "feeBps",
+            "type": "u16"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "platformInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "platform",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "paymentMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "feeTreasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "feeBps",
+            "type": "u16"
+          },
+          {
+            "name": "initializedAt",
+            "type": "i64"
           }
         ]
       }

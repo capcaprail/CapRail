@@ -14,6 +14,7 @@ const utf8 = new TextEncoder()
 // address against `fixtures/hook-extra-account-metas.json`, which the Rust test in turn
 // pins against the program — so a drift here fails the gate, not the first transfer.
 export const SEED = {
+  platform: utf8.encode('platform'),
   company: utf8.encode('company'),
   mint: utf8.encode('mint'),
   token: utf8.encode('token'),
@@ -46,6 +47,14 @@ export function u32Le(value: number): Uint8Array {
 
 const derive = (seeds: Uint8Array[], programId: PublicKey): PublicKey =>
   PublicKey.findProgramAddressSync(seeds, programId)[0]
+
+/**
+ * `PlatformConfig` — one account for the whole program: the fee and the stablecoin
+ * every offer is priced in. No company in the seeds, and no argument to get wrong.
+ */
+export function platformPda(): PublicKey {
+  return derive([SEED.platform], PROGRAM_ID)
+}
 
 /** `Company` — one per `companyId`, chosen by the client; a taken id fails `init`. */
 export function companyPda(companyId: bigint): PublicKey {

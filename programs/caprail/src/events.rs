@@ -5,6 +5,19 @@ use anchor_lang::prelude::*;
 
 use crate::state::{InvestorStatus, TransferPolicy};
 
+// Один раз на розгортання програми: комісія і стейблкоїн оплати. Індекс бере
+// їх звідси, щоб API показував сторонам число до прийняття (FR-013), не
+// дочитуючи акаунт із вузла.
+#[event]
+pub struct PlatformInitialized {
+    pub platform: Pubkey,
+    pub authority: Pubkey,
+    pub payment_mint: Pubkey,
+    pub fee_treasury: Pubkey,
+    pub fee_bps: u16,
+    pub initialized_at: i64,
+}
+
 #[event]
 pub struct CompanyCreated {
     pub company: Pubkey,

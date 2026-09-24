@@ -1,4 +1,5 @@
-// The US1 demo and the M1 measurements (T025).
+// The demo CLI: the US1 story with the M1 measurements (T025), and the platform's
+// one-time setup (T035).
 //
 // Run against a local validator with both programs in genesis
 // (`scripts/wsl-localnet.sh start`, from PowerShell through `wsl.exe`):
@@ -7,7 +8,13 @@
 //   pnpm demo:us1 -- --rpc https://api.devnet.solana.com --payer <keypair.json>
 //   pnpm demo:us1 -- --rpc … --payer … --api http://localhost:8787   # + SC-003/004/008
 //
-// Options:
+// The platform is configured once per deployed program, by the offline key:
+//   pnpm demo:init-platform -- --authority <keypair.json>
+//   pnpm demo:init-platform -- --rpc devnet --authority … --fee-bps 100 --mint-to <wallet>
+//   pnpm demo:init-platform -- --rpc devnet --authority … --payment-mint <existing stablecoin>
+// See `scenarios/init-platform.ts` for its options; `--rpc` is the one they share.
+//
+// Options of the US1 run:
 //   --rpc <url>       node, default http://127.0.0.1:8899; `devnet` takes
 //                     DEVNET_RPC_URL from the environment (.env) — the same node
 //                     the worker reads, and its key stays out of the command line
@@ -42,6 +49,7 @@ import {
   summarize,
   waitIndexed,
 } from './measure-panel.ts'
+import { parseInitPlatformArgs, runInitPlatform } from './scenarios/init-platform.ts'
 import { fundKeys, refundKeys, runUs1, tokenBalance, type Us1Result } from './scenarios/us1.ts'
 
 type Options = {
@@ -52,11 +60,14 @@ type Options = {
   readonly api: string | undefined
 }
 
+/** `--flag value`, or `undefined` when the flag is not there. Shared by both commands. */
+export function flagValue(argv: readonly string[], flag: string): string | undefined {
+  const index = argv.indexOf(flag)
+  return index === -1 ? undefined : argv[index + 1]
+}
+
 function parseArgs(argv: readonly string[]): Options {
-  const value = (flag: string): string | undefined => {
-    const index = argv.indexOf(flag)
-    return index === -1 ? undefined : argv[index + 1]
-  }
+  const value = (flag: string): string | undefined => flagValue(argv, flag)
   const dump = value('--dump')
   const count = Number(value('--count') ?? 100)
   if (!Number.isInteger(count) || count < 4) throw new Error('--count must be an integer ≥ 4')
@@ -340,18 +351,34 @@ async function run(ctx: DemoContext, options: Options, network: string): Promise
   return ok
 }
 
-async function main(): Promise<void> {
-  const options = parseArgs(process.argv.slice(2))
-  const ctx = createContext(options.rpc)
-  const payer = options.payer === undefined ? undefined : loadKeypair(options.payer)
-
+/** A node that answers; the URL is printed without the key a Helius URL carries. */
+async function connect(rpc: string): Promise<DemoContext> {
+  const ctx = createContext(rpc)
   try {
     await ctx.connection.getVersion()
   } catch {
     throw new Error(
-      `no node at ${describeUrl(options.rpc)} — locally: wsl.exe -e bash /mnt/<disk>/<repo>/scripts/wsl-localnet.sh start`,
+      `no node at ${describeUrl(rpc)} — locally: wsl.exe -e bash /mnt/<disk>/<repo>/scripts/wsl-localnet.sh start`,
     )
   }
+  return ctx
+}
+
+// The platform's setup is a command of its own, not a step of the story: it runs once
+// per deployed program, with a key no story has.
+async function initPlatform(argv: readonly string[]): Promise<void> {
+  const options = parseInitPlatformArgs(argv)
+  const rpc = rpcOf(flagValue(argv, '--rpc'))
+  const ctx = await connect(rpc)
+  log(`node ${ctx.local ? 'localnet' : describeUrl(rpc)}`)
+  process.exitCode = (await runInitPlatform(ctx, options, log)) ? 0 : 1
+}
+
+async function us1(argv: readonly string[]): Promise<void> {
+  const options = parseArgs(argv)
+  const ctx = await connect(options.rpc)
+  const payer = options.payer === undefined ? undefined : loadKeypair(options.payer)
+
   const network = ctx.local ? 'localnet' : describeUrl(options.rpc)
   log(`node ${network}, ${options.count} transfers per criterion`)
 
@@ -367,6 +394,24 @@ async function main(): Promise<void> {
       const refunded = await refundKeys(ctx, payer, log)
       log(`refunded ${solOf(refunded)} SOL to ${payer.publicKey.toBase58()}`)
     }
+  }
+}
+
+// The first argument names the command; without one it is the US1 run, as it was
+// before there was more than one.
+async function main(): Promise<void> {
+  const argv = process.argv.slice(2)
+  const first = argv[0]
+  const named = first !== undefined && !first.startsWith('--')
+  const command = named ? first : 'us1'
+  const rest = named ? argv.slice(1) : argv
+  switch (command) {
+    case 'init-platform':
+      return await initPlatform(rest)
+    case 'us1':
+      return await us1(rest)
+    default:
+      throw new Error(`unknown command ${command} — expected us1 or init-platform`)
   }
 }
 

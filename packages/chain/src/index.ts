@@ -8,6 +8,7 @@ export {
   grantPda,
   investorRecordPda,
   mintPda,
+  platformPda,
   SEED,
   TOKEN_2022_PROGRAM_ID,
   tokenConfigPda,
@@ -46,6 +47,13 @@ export {
   toPlan,
   transactionBytes,
 } from './tx/plan.ts'
+export {
+  BPS_DENOMINATOR,
+  buildInitPlatform,
+  FEE_BPS_MAX,
+  type InitPlatformArgs,
+  platformFee,
+} from './tx/platform.ts'
 export {
   buildCreateToken,
   buildSetPolicy,

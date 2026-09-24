@@ -8,12 +8,13 @@ import {
   type TransactionInstruction,
 } from '@solana/web3.js'
 import { describe, expect, it } from 'vitest'
-import { ata, extraAccountMetaListPda, tokenConfigPda } from '../pda.ts'
+import { ata, extraAccountMetaListPda, platformPda, tokenConfigPda } from '../pda.ts'
 import { createCaprailProgram, HOOK_PROGRAM_ID, PROGRAM_ID } from '../program.ts'
 import { loadHookFixture } from '../test/hook-fixture.ts'
 import { buildCreateCompany, buildSetRoles } from './company.ts'
 import { buildSetInvestorStatus, jurisdictionBytes } from './investors.ts'
 import { compileTransaction, MAX_TRANSACTION_BYTES, type TxPlan, transactionBytes } from './plan.ts'
+import { buildInitPlatform, FEE_BPS_MAX, platformFee } from './platform.ts'
 import {
   buildCreateToken,
   buildSetPolicy,
@@ -88,6 +89,53 @@ const keyAt = (instruction: TransactionInstruction, index: number): PublicKey =>
   if (meta === undefined) throw new Error(`no account at ${index}`)
   return meta.pubkey
 }
+
+describe('initPlatform', () => {
+  const PAYMENT_MINT = new PublicKey('SysvarS1otHashes111111111111111111111111111')
+  const FEE_TREASURY = new PublicKey('SysvarS1otHistory11111111111111111111111111')
+  const args = {
+    authority: ADMIN,
+    paymentMint: PAYMENT_MINT,
+    feeTreasury: FEE_TREASURY,
+    feeBps: 100,
+  }
+
+  it('carries the fee as a bare u16 and addresses the one platform PDA', async () => {
+    const plan = await buildInitPlatform(program, args)
+    const instruction = only(plan)
+    expectAccountsAsDeclared(instruction, 'initPlatform')
+    expect(decode(instruction)).toEqual({ name: 'initPlatform', data: { feeBps: 100 } })
+    expect(keyAt(instruction, 0).equals(ADMIN)).toBe(true)
+    expect(keyAt(instruction, 1).equals(platformPda())).toBe(true)
+    expect(keyAt(instruction, 2).equals(PAYMENT_MINT)).toBe(true)
+    expect(keyAt(instruction, 3).equals(FEE_TREASURY)).toBe(true)
+    // The offline authority is the only signer: no server co-signs this one.
+    expect(plan.signers).toEqual([ADMIN])
+  })
+
+  it('refuses a fee the program would refuse, before the key is asked to sign', async () => {
+    await expect(buildInitPlatform(program, { ...args, feeBps: FEE_BPS_MAX + 1 })).rejects.toThrow(
+      RangeError,
+    )
+    await expect(buildInitPlatform(program, { ...args, feeBps: -1 })).rejects.toThrow(RangeError)
+    await expect(buildInitPlatform(program, { ...args, feeBps: 1.5 })).rejects.toThrow(RangeError)
+  })
+
+  // The same numbers as `programs/caprail/tests/market_state.rs`: the panel shows this
+  // figure before the buyer accepts, and the chain then charges exactly it (FR-013).
+  it('computes the fee like the program does — down, never above the nominal share', () => {
+    expect(platformFee(100, 1_000_000n)).toBe(10_000n)
+    expect(platformFee(100, 99n)).toBe(0n)
+    expect(platformFee(0, 18_446_744_073_709_551_615n)).toBe(0n)
+    expect(platformFee(FEE_BPS_MAX, 18_446_744_073_709_551_615n)).toBe(1_844_674_407_370_955_161n)
+    // Parts of a partial fill never add up to more than the fee of the whole.
+    const whole = platformFee(250, 100_000_000n)
+    const parts = [150, 150, 100]
+      .map((amount) => platformFee(250, BigInt(amount) * 250_000n))
+      .reduce((a, b) => a + b, 0n)
+    expect(parts).toBeLessThanOrEqual(whole)
+  })
+})
 
 describe('createCompany', () => {
   const args = {

@@ -14,6 +14,7 @@ import {
 // would then not be asked for the signature that the network rejects the transaction for.
 
 export const TX_STEPS = [
+  'init-platform',
   'create-company',
   'create-token',
   'set-policy',

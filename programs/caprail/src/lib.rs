@@ -24,6 +24,12 @@ declare_id!("As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g");
 pub mod caprail {
     use super::*;
 
+    // Комісія платформи і стейблкоїн оплати — один раз на всю програму,
+    // ключем, що живе поза серверами.
+    pub fn init_platform(ctx: Context<InitPlatform>, fee_bps: u16) -> Result<()> {
+        instructions::init_platform_handler(ctx, fee_bps)
+    }
+
     // Компанія-емітент: адміністратор підписує і платить, комплаєнс-офіцер —
     // окремий ключ в аргументах.
     pub fn create_company(ctx: Context<CreateCompany>, args: CreateCompanyArgs) -> Result<()> {

@@ -43,4 +43,6 @@ pub enum CaprailError {
     InvalidFee,
     #[msg("offer needs a positive amount and price whose product fits in u64")]
     InvalidOffer,
+    #[msg("payment mint must transfer the exact amount: no transfer hook, no transfer fee")]
+    InvalidPaymentMint,
 }

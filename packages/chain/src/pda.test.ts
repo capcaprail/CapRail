@@ -7,6 +7,7 @@ import {
   grantPda,
   investorRecordPda,
   mintPda,
+  platformPda,
   tokenConfigPda,
   transferPermitPda,
   treasuryAta,
@@ -35,6 +36,18 @@ describe('seeds are little-endian and exactly as wide as the Rust field', () => 
     expect(() => u32Le(1.5)).toThrow(RangeError)
     expect(() => u32Le(2 ** 32)).toThrow(RangeError)
   })
+})
+
+// The fixture says nothing about the platform: it is one account for the whole program,
+// with no company and no mint in its seeds. The pin is the seed itself.
+it('the platform config is a single PDA under caprail', () => {
+  const platform = platformPda()
+  expect(
+    PublicKey.findProgramAddressSync([new TextEncoder().encode('platform')], PROGRAM_ID)[0].equals(
+      platform,
+    ),
+  ).toBe(true)
+  expect(PublicKey.isOnCurve(platform.toBytes())).toBe(false)
 })
 
 describe('addresses match the program for the fixture inputs', () => {
