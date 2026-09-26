@@ -1,13 +1,25 @@
 import type { FeedEvent } from '@caprail/shared'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFeed, type FeedSource } from './feed.ts'
 import { memoryIndexReader } from './memory-reader.ts'
 import type { FeedMarks } from './reader.ts'
 import { seed } from './test-seed.ts'
 
-const tick = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms))
+// The poller runs on `setInterval`; on real time a busy machine (the parallel
+// `pnpm gate`) fits fewer ticks into a wait than the test counts on. Fake timers
+// fire exactly the ticks the test advances through, and flush the awaits between.
+const tick = async (ms: number) => {
+  await vi.advanceTimersByTimeAsync(ms)
+}
 
 describe('createFeed', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('starts from the current marks and delivers what lands afterwards', async () => {
     const data = seed()
     const reader = memoryIndexReader(data.index)
@@ -110,6 +122,8 @@ describe('createFeed', () => {
     const stop = feed.subscribe('1', () => {})
     await tick(20)
     stop()
+    // The first poll on subscribe, then one per 3 ms: the clock the test counts on.
+    expect(seen).toHaveLength(7)
     expect(seen[0]).toBeNull()
     expect(seen[1]).toEqual(marks(1n))
     expect(seen[2]).toEqual(marks(2n))
