@@ -45,4 +45,10 @@ pub enum CaprailError {
     InvalidOffer,
     #[msg("payment mint must transfer the exact amount: no transfer hook, no transfer fee")]
     InvalidPaymentMint,
+    #[msg("offer amount exceeds the seller's balance")]
+    OfferExceedsBalance,
+    #[msg("seller's token account already has an active delegation; cancel that offer first")]
+    DelegationInUse,
+    #[msg("offer is no longer open")]
+    OfferNotOpen,
 }

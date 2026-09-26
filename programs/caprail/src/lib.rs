@@ -69,4 +69,15 @@ pub mod caprail {
     pub fn distribute(ctx: Context<Distribute>, amount: u64) -> Result<()> {
         instructions::distribute_handler(ctx, amount)
     }
+
+    // Пропозиція продажу без ескроу: `Offer` PDA стає делегатом рахунку
+    // продавця на всю кількість.
+    pub fn create_offer(ctx: Context<CreateOffer>, args: CreateOfferArgs) -> Result<()> {
+        instructions::create_offer_handler(ctx, args)
+    }
+
+    // Скасування продавцем до повного виконання; знімає делегування.
+    pub fn cancel_offer(ctx: Context<CancelOffer>) -> Result<()> {
+        instructions::cancel_offer_handler(ctx)
+    }
 }

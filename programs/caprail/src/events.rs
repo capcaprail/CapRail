@@ -94,3 +94,34 @@ pub struct InvestorStatusSet {
     pub updated_at: i64,
     pub updated_by: Pubkey,
 }
+
+// Нова пропозиція на ринку. `company` — щоб індекс поклав рядок під тенанта без
+// пошуку мінта; `payment_mint` — у чому ціна, бо платформу можна розгорнути з
+// будь-яким стейблкоїном. Ціна — за мінімальну одиницю токена.
+#[event]
+pub struct OfferCreated {
+    pub offer: Pubkey,
+    pub company: Pubkey,
+    pub mint: Pubkey,
+    pub seller: Pubkey,
+    pub offer_id: u64,
+    pub amount: u64,
+    pub price_per_unit: u64,
+    pub payment_mint: Pubkey,
+    pub rofr_until: i64,
+    pub created_at: i64,
+}
+
+// `remaining` — скільки лишилось непроданим на момент скасування. Якщо
+// делегування вже було не наше (`delegation_revoked = false`), рахунок продавця
+// лишився з чужим делегатом — індексу це пояснює, чому пропозиція була `stale`.
+#[event]
+pub struct OfferCancelled {
+    pub offer: Pubkey,
+    pub mint: Pubkey,
+    pub seller: Pubkey,
+    pub offer_id: u64,
+    pub remaining: u64,
+    pub delegation_revoked: bool,
+    pub cancelled_at: i64,
+}

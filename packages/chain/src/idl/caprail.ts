@@ -20,6 +20,99 @@ export type Caprail = {
   },
   "instructions": [
     {
+      "name": "cancelOffer",
+      "discriminator": [
+        92,
+        203,
+        223,
+        40,
+        92,
+        89,
+        53,
+        119
+      ],
+      "accounts": [
+        {
+          "name": "seller",
+          "signer": true,
+          "relations": [
+            "offer"
+          ]
+        },
+        {
+          "name": "offer",
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "offer"
+          ]
+        },
+        {
+          "name": "sellerTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "seller"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "tokenProgram"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "createCompany",
       "discriminator": [
         36,
@@ -72,6 +165,159 @@ export type Caprail = {
           "type": {
             "defined": {
               "name": "createCompanyArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "createOffer",
+      "discriminator": [
+        237,
+        233,
+        192,
+        168,
+        248,
+        7,
+        249,
+        241
+      ],
+      "accounts": [
+        {
+          "name": "seller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "platform",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  116,
+                  102,
+                  111,
+                  114,
+                  109
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tokenConfig"
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "sellerTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "seller"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "offer",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              },
+              {
+                "kind": "account",
+                "path": "seller"
+              },
+              {
+                "kind": "arg",
+                "path": "args.offerId"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "createOfferArgs"
             }
           }
         }
@@ -739,6 +985,19 @@ export type Caprail = {
       ]
     },
     {
+      "name": "offer",
+      "discriminator": [
+        215,
+        88,
+        60,
+        71,
+        170,
+        162,
+        73,
+        229
+      ]
+    },
+    {
       "name": "platformConfig",
       "discriminator": [
         160,
@@ -790,6 +1049,32 @@ export type Caprail = {
         145,
         127,
         35
+      ]
+    },
+    {
+      "name": "offerCancelled",
+      "discriminator": [
+        45,
+        42,
+        175,
+        214,
+        51,
+        192,
+        154,
+        9
+      ]
+    },
+    {
+      "name": "offerCreated",
+      "discriminator": [
+        31,
+        236,
+        215,
+        144,
+        75,
+        45,
+        157,
+        87
       ]
     },
     {
@@ -953,6 +1238,21 @@ export type Caprail = {
       "code": 6018,
       "name": "invalidPaymentMint",
       "msg": "payment mint must transfer the exact amount: no transfer hook, no transfer fee"
+    },
+    {
+      "code": 6019,
+      "name": "offerExceedsBalance",
+      "msg": "offer amount exceeds the seller's balance"
+    },
+    {
+      "code": 6020,
+      "name": "delegationInUse",
+      "msg": "seller's token account already has an active delegation; cancel that offer first"
+    },
+    {
+      "code": 6021,
+      "name": "offerNotOpen",
+      "msg": "offer is no longer open"
     }
   ],
   "types": [
@@ -1037,6 +1337,26 @@ export type Caprail = {
           {
             "name": "name",
             "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "createOfferArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offerId",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "pricePerUnit",
+            "type": "u64"
           }
         ]
       }
@@ -1196,6 +1516,159 @@ export type Caprail = {
           {
             "name": "updatedBy",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "offer",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "offerId",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "remaining",
+            "type": "u64"
+          },
+          {
+            "name": "pricePerUnit",
+            "type": "u64"
+          },
+          {
+            "name": "rofrUntil",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "offerStatus"
+              }
+            }
+          },
+          {
+            "name": "createdAt",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "offerCancelled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "offerId",
+            "type": "u64"
+          },
+          {
+            "name": "remaining",
+            "type": "u64"
+          },
+          {
+            "name": "delegationRevoked",
+            "type": "bool"
+          },
+          {
+            "name": "cancelledAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "offerCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "company",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "offerId",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "pricePerUnit",
+            "type": "u64"
+          },
+          {
+            "name": "paymentMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "rofrUntil",
+            "type": "i64"
+          },
+          {
+            "name": "createdAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "offerStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "open"
+          },
+          {
+            "name": "filled"
+          },
+          {
+            "name": "cancelled"
           }
         ]
       }
@@ -1523,6 +1996,99 @@ export const IDL: Caprail = {
   },
   "instructions": [
     {
+      "name": "cancelOffer",
+      "discriminator": [
+        92,
+        203,
+        223,
+        40,
+        92,
+        89,
+        53,
+        119
+      ],
+      "accounts": [
+        {
+          "name": "seller",
+          "signer": true,
+          "relations": [
+            "offer"
+          ]
+        },
+        {
+          "name": "offer",
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "offer"
+          ]
+        },
+        {
+          "name": "sellerTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "seller"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "tokenProgram"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "createCompany",
       "discriminator": [
         36,
@@ -1575,6 +2141,159 @@ export const IDL: Caprail = {
           "type": {
             "defined": {
               "name": "createCompanyArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "createOffer",
+      "discriminator": [
+        237,
+        233,
+        192,
+        168,
+        248,
+        7,
+        249,
+        241
+      ],
+      "accounts": [
+        {
+          "name": "seller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "platform",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  116,
+                  102,
+                  111,
+                  114,
+                  109
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tokenConfig"
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "sellerTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "seller"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "offer",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              },
+              {
+                "kind": "account",
+                "path": "seller"
+              },
+              {
+                "kind": "arg",
+                "path": "args.offerId"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "createOfferArgs"
             }
           }
         }
@@ -2242,6 +2961,19 @@ export const IDL: Caprail = {
       ]
     },
     {
+      "name": "offer",
+      "discriminator": [
+        215,
+        88,
+        60,
+        71,
+        170,
+        162,
+        73,
+        229
+      ]
+    },
+    {
       "name": "platformConfig",
       "discriminator": [
         160,
@@ -2293,6 +3025,32 @@ export const IDL: Caprail = {
         145,
         127,
         35
+      ]
+    },
+    {
+      "name": "offerCancelled",
+      "discriminator": [
+        45,
+        42,
+        175,
+        214,
+        51,
+        192,
+        154,
+        9
+      ]
+    },
+    {
+      "name": "offerCreated",
+      "discriminator": [
+        31,
+        236,
+        215,
+        144,
+        75,
+        45,
+        157,
+        87
       ]
     },
     {
@@ -2456,6 +3214,21 @@ export const IDL: Caprail = {
       "code": 6018,
       "name": "invalidPaymentMint",
       "msg": "payment mint must transfer the exact amount: no transfer hook, no transfer fee"
+    },
+    {
+      "code": 6019,
+      "name": "offerExceedsBalance",
+      "msg": "offer amount exceeds the seller's balance"
+    },
+    {
+      "code": 6020,
+      "name": "delegationInUse",
+      "msg": "seller's token account already has an active delegation; cancel that offer first"
+    },
+    {
+      "code": 6021,
+      "name": "offerNotOpen",
+      "msg": "offer is no longer open"
     }
   ],
   "types": [
@@ -2540,6 +3313,26 @@ export const IDL: Caprail = {
           {
             "name": "name",
             "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "createOfferArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offerId",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "pricePerUnit",
+            "type": "u64"
           }
         ]
       }
@@ -2699,6 +3492,159 @@ export const IDL: Caprail = {
           {
             "name": "updatedBy",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "offer",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "offerId",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "remaining",
+            "type": "u64"
+          },
+          {
+            "name": "pricePerUnit",
+            "type": "u64"
+          },
+          {
+            "name": "rofrUntil",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "offerStatus"
+              }
+            }
+          },
+          {
+            "name": "createdAt",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "offerCancelled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "offerId",
+            "type": "u64"
+          },
+          {
+            "name": "remaining",
+            "type": "u64"
+          },
+          {
+            "name": "delegationRevoked",
+            "type": "bool"
+          },
+          {
+            "name": "cancelledAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "offerCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "company",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "offerId",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "pricePerUnit",
+            "type": "u64"
+          },
+          {
+            "name": "paymentMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "rofrUntil",
+            "type": "i64"
+          },
+          {
+            "name": "createdAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "offerStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "open"
+          },
+          {
+            "name": "filled"
+          },
+          {
+            "name": "cancelled"
           }
         ]
       }

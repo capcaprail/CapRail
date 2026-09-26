@@ -358,6 +358,24 @@ pub fn token_amount(result: &InstructionResult, key: &Pubkey) -> u64 {
         .amount
 }
 
+/// Делегат токен-рахунку і скільки йому дозволено — `(None, 0)`, якщо його немає.
+pub fn delegate_of(account: &Account) -> (Option<Pubkey>, u64) {
+    let base = StateWithExtensions::<TokenAccount>::unpack(&account.data)
+        .expect("токен-акаунт має читатися")
+        .base;
+    (Option::from(base.delegate), base.delegated_amount)
+}
+
+/// Рахунок, який власник уже комусь делегував — стан, до якого `approve`
+/// доводить мережа, без прогону самої інструкції.
+pub fn set_delegate(account: &mut Account, delegate: &Pubkey, amount: u64) {
+    let mut state =
+        StateWithExtensionsMut::<TokenAccount>::unpack(&mut account.data).expect("токен-акаунт");
+    state.base.delegate = COption::Some(*delegate);
+    state.base.delegated_amount = amount;
+    state.pack_base();
+}
+
 /// Акаунт, який у мережі створила б сама програма: дискримінатор Anchor плюс
 /// borsh-тіло. Дозволяє починати тест зі стану «компанія вже є», не проганяючи
 /// попередню інструкцію заради її побічного ефекту.
