@@ -20,6 +20,294 @@ export type Caprail = {
   },
   "instructions": [
     {
+      "name": "acceptOffer",
+      "discriminator": [
+        227,
+        82,
+        234,
+        131,
+        1,
+        18,
+        48,
+        2
+      ],
+      "accounts": [
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "platform",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  116,
+                  102,
+                  111,
+                  114,
+                  109
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "offer",
+          "writable": true
+        },
+        {
+          "name": "seller",
+          "relations": [
+            "offer"
+          ]
+        },
+        {
+          "name": "tokenConfig"
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "offer",
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "sellerTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "seller"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "buyerTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "buyer"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "paymentMint",
+          "relations": [
+            "platform"
+          ]
+        },
+        {
+          "name": "buyerPaymentAccount",
+          "writable": true
+        },
+        {
+          "name": "sellerPaymentAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "seller"
+              },
+              {
+                "kind": "account",
+                "path": "paymentTokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "paymentMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "feeTreasury",
+          "writable": true,
+          "relations": [
+            "platform"
+          ]
+        },
+        {
+          "name": "extraAccountMetaList"
+        },
+        {
+          "name": "stateProgram",
+          "address": "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g"
+        },
+        {
+          "name": "investorRecord"
+        },
+        {
+          "name": "grant"
+        },
+        {
+          "name": "transferPermit"
+        },
+        {
+          "name": "hookProgram",
+          "address": "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "paymentTokenProgram"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "cancelOffer",
       "discriminator": [
         92,
@@ -1052,6 +1340,19 @@ export type Caprail = {
       ]
     },
     {
+      "name": "offerAccepted",
+      "discriminator": [
+        81,
+        238,
+        238,
+        115,
+        140,
+        18,
+        8,
+        20
+      ]
+    },
+    {
       "name": "offerCancelled",
       "discriminator": [
         45,
@@ -1253,6 +1554,16 @@ export type Caprail = {
       "code": 6021,
       "name": "offerNotOpen",
       "msg": "offer is no longer open"
+    },
+    {
+      "code": 6022,
+      "name": "amountExceedsRemaining",
+      "msg": "amount exceeds what remains on the offer"
+    },
+    {
+      "code": 6023,
+      "name": "offerStale",
+      "msg": "seller's account no longer backs this offer: delegation or balance is short"
     }
   ],
   "types": [
@@ -1568,6 +1879,66 @@ export type Caprail = {
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "offerAccepted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "company",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "buyer",
+            "type": "pubkey"
+          },
+          {
+            "name": "offerId",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "pricePerUnit",
+            "type": "u64"
+          },
+          {
+            "name": "payment",
+            "type": "u64"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
+          },
+          {
+            "name": "paymentMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "remaining",
+            "type": "u64"
+          },
+          {
+            "name": "acceptedAt",
+            "type": "i64"
           }
         ]
       }
@@ -1996,6 +2367,294 @@ export const IDL: Caprail = {
   },
   "instructions": [
     {
+      "name": "acceptOffer",
+      "discriminator": [
+        227,
+        82,
+        234,
+        131,
+        1,
+        18,
+        48,
+        2
+      ],
+      "accounts": [
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "platform",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  116,
+                  102,
+                  111,
+                  114,
+                  109
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "offer",
+          "writable": true
+        },
+        {
+          "name": "seller",
+          "relations": [
+            "offer"
+          ]
+        },
+        {
+          "name": "tokenConfig"
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "offer",
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "sellerTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "seller"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "buyerTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "buyer"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "paymentMint",
+          "relations": [
+            "platform"
+          ]
+        },
+        {
+          "name": "buyerPaymentAccount",
+          "writable": true
+        },
+        {
+          "name": "sellerPaymentAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "seller"
+              },
+              {
+                "kind": "account",
+                "path": "paymentTokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "paymentMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "feeTreasury",
+          "writable": true,
+          "relations": [
+            "platform"
+          ]
+        },
+        {
+          "name": "extraAccountMetaList"
+        },
+        {
+          "name": "stateProgram",
+          "address": "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g"
+        },
+        {
+          "name": "investorRecord"
+        },
+        {
+          "name": "grant"
+        },
+        {
+          "name": "transferPermit"
+        },
+        {
+          "name": "hookProgram",
+          "address": "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "paymentTokenProgram"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "cancelOffer",
       "discriminator": [
         92,
@@ -3028,6 +3687,19 @@ export const IDL: Caprail = {
       ]
     },
     {
+      "name": "offerAccepted",
+      "discriminator": [
+        81,
+        238,
+        238,
+        115,
+        140,
+        18,
+        8,
+        20
+      ]
+    },
+    {
       "name": "offerCancelled",
       "discriminator": [
         45,
@@ -3229,6 +3901,16 @@ export const IDL: Caprail = {
       "code": 6021,
       "name": "offerNotOpen",
       "msg": "offer is no longer open"
+    },
+    {
+      "code": 6022,
+      "name": "amountExceedsRemaining",
+      "msg": "amount exceeds what remains on the offer"
+    },
+    {
+      "code": 6023,
+      "name": "offerStale",
+      "msg": "seller's account no longer backs this offer: delegation or balance is short"
     }
   ],
   "types": [
@@ -3544,6 +4226,66 @@ export const IDL: Caprail = {
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "offerAccepted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "company",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "buyer",
+            "type": "pubkey"
+          },
+          {
+            "name": "offerId",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "pricePerUnit",
+            "type": "u64"
+          },
+          {
+            "name": "payment",
+            "type": "u64"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
+          },
+          {
+            "name": "paymentMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "remaining",
+            "type": "u64"
+          },
+          {
+            "name": "acceptedAt",
+            "type": "i64"
           }
         ]
       }

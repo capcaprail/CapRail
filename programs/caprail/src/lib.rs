@@ -80,4 +80,10 @@ pub mod caprail {
     pub fn cancel_offer(ctx: Context<CancelOffer>) -> Result<()> {
         instructions::cancel_offer_handler(ctx)
     }
+
+    // Угода: частка продавця покупцю через хук, оплата продавцю за вирахуванням
+    // комісії, комісія платформі — одна інструкція, все або нічого.
+    pub fn accept_offer(ctx: Context<AcceptOffer>, amount: u64) -> Result<()> {
+        instructions::accept_offer_handler(ctx, amount)
+    }
 }

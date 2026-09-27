@@ -125,3 +125,25 @@ pub struct OfferCancelled {
     pub delegation_revoked: bool,
     pub cancelled_at: i64,
 }
+
+// Угода — прийняття цілком або частково. Сторони й суми тут цілком, щоб індекс
+// поклав рядок у `trades`, а cap table позначив частку покупця джерелом
+// «покупка», не дочитуючи транзакцію; сам переказ частки журнал бачить ще й
+// як `TransferAllowed` від хука. `payment` — уся оплата, продавець отримав
+// `payment − fee`; `remaining == 0` — пропозиція виконана.
+#[event]
+pub struct OfferAccepted {
+    pub offer: Pubkey,
+    pub company: Pubkey,
+    pub mint: Pubkey,
+    pub seller: Pubkey,
+    pub buyer: Pubkey,
+    pub offer_id: u64,
+    pub amount: u64,
+    pub price_per_unit: u64,
+    pub payment: u64,
+    pub fee: u64,
+    pub payment_mint: Pubkey,
+    pub remaining: u64,
+    pub accepted_at: i64,
+}

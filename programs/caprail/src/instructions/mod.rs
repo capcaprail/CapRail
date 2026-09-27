@@ -5,6 +5,7 @@
 //! а не однаково `handler` — два `handler` під одним glob дають неоднозначне
 //! ім'я, а це попередження, яке під `-D warnings` валить гейт.
 
+pub mod accept_offer;
 pub mod cancel_offer;
 pub mod create_company;
 pub mod create_offer;
@@ -15,6 +16,7 @@ pub mod set_investor_status;
 pub mod set_policy;
 pub mod set_roles;
 
+pub use accept_offer::*;
 pub use cancel_offer::*;
 pub use create_company::*;
 pub use create_offer::*;

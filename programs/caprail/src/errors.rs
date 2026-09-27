@@ -51,4 +51,8 @@ pub enum CaprailError {
     DelegationInUse,
     #[msg("offer is no longer open")]
     OfferNotOpen,
+    #[msg("amount exceeds what remains on the offer")]
+    AmountExceedsRemaining,
+    #[msg("seller's account no longer backs this offer: delegation or balance is short")]
+    OfferStale,
 }
