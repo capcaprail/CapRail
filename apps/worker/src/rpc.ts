@@ -1,7 +1,9 @@
 import { TOKEN_2022_PROGRAM_ID } from '@caprail/chain'
+import { unpackAccount } from '@solana/spl-token'
 import { type Connection, PublicKey } from '@solana/web3.js'
 import type { ApplyRpc } from './apply.ts'
 import { type BackfillRpc, rpcFor } from './backfill.ts'
+import type { StaleRpc, TokenAccountState } from './stale.ts'
 
 // Token-2022 account layout starts like the classic one: mint (32), owner (32),
 // amount (8), …; extensions follow the base 165 bytes. Only the owner is read here.
@@ -36,6 +38,35 @@ export function applyRpcFor(connection: Connection, programId: PublicKey): Apply
         // The RPC answers a missing account with an error, not a null value.
         if (err instanceof Error && /could not find account/i.test(err.message)) return null
         throw err
+      }
+    },
+  }
+}
+
+export function staleRpcFor(connection: Connection): StaleRpc {
+  return {
+    tokenAccounts: async (accounts) => {
+      const keys = accounts.map((account) => new PublicKey(account))
+      const { context, value } = await connection.getMultipleAccountsInfoAndContext(
+        keys,
+        'confirmed',
+      )
+      return {
+        slot: context.slot,
+        accounts: value.map((info, i): TokenAccountState | null => {
+          const key = keys[i]
+          // Closed, or something that is not a Token-2022 account at that address.
+          if (info === null || key === undefined || !info.owner.equals(TOKEN_2022_PROGRAM_ID)) {
+            return null
+          }
+          const account = unpackAccount(key, info, TOKEN_2022_PROGRAM_ID)
+          return {
+            amount: account.amount,
+            delegate: account.delegate?.toBase58() ?? null,
+            delegatedAmount: account.delegatedAmount,
+            frozen: account.isFrozen,
+          }
+        }),
       }
     },
   }

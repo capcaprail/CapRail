@@ -6,15 +6,19 @@ import { createApplier } from './apply.ts'
 import { type BackfillRpc, backfill, rpcFor } from './backfill.ts'
 import { workerConfigFromEnv } from './config.ts'
 import { cursorStore } from './cursor.ts'
-import { indexStore } from './index-store.ts'
+import { indexStore, offerBook } from './index-store.ts'
 import { createPipeline } from './pipeline.ts'
-import { applyRpcFor } from './rpc.ts'
+import { applyRpcFor, staleRpcFor } from './rpc.ts'
+import { createStaleSweep } from './stale.ts'
 import { subscribeLogs } from './subscribe.ts'
 
 // The subscription is the fast path; a backfill from the cursor on a timer is the
 // slow, complete one. A dropped websocket therefore costs latency, never records —
 // there is no separate reconnect dance, because the timer already is one.
 const BACKFILL_EVERY_MS = 30_000
+// How often to look for offers whose reading expired (`STALE_TTL_MS`) or was
+// invalidated by a transfer; a pass with nothing due makes no RPC call.
+const STALE_SWEEP_EVERY_MS = 5_000
 const SHUTDOWN_GRACE_MS = 10_000
 
 async function main(): Promise<void> {
@@ -69,15 +73,32 @@ async function main(): Promise<void> {
     }
   }
 
+  const sweep = createStaleSweep({ book: offerBook(database.db), rpc: staleRpcFor(primary) })
+  let sweeping = false
+  async function stalePass(): Promise<void> {
+    if (sweeping) return
+    sweeping = true
+    try {
+      const result = await sweep()
+      if (result.due > 0) logger.debug(result, 'stale sweep')
+    } catch (err) {
+      logger.warn({ err }, 'stale sweep failed')
+    } finally {
+      sweeping = false
+    }
+  }
+
   await backfillPass()
   const subscription = subscribeLogs(primary, PROGRAM_ID, pipeline.push)
   const timer = setInterval(() => void backfillPass(), BACKFILL_EVERY_MS)
+  const staleTimer = setInterval(() => void stalePass(), STALE_SWEEP_EVERY_MS)
   logger.info({ program: PROGRAM_ID.toBase58(), rpc: config.rpcUrl }, 'worker listening')
 
   for (const signal of ['SIGTERM', 'SIGINT'] as const) {
     process.once(signal, () => {
       logger.info({ signal }, 'shutting down')
       clearInterval(timer)
+      clearInterval(staleTimer)
       const forceExit = setTimeout(() => process.exit(1), SHUTDOWN_GRACE_MS)
       void subscription
         .close()

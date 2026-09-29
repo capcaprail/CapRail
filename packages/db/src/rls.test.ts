@@ -31,8 +31,10 @@ const INDEX_TABLES = [
   'holdings',
   'investor_status_events',
   'investors',
+  'offers',
   'policy_versions',
   'tokens',
+  'trades',
   'transfer_attempts',
 ]
 
@@ -73,9 +75,11 @@ describe('migrations', () => {
     expect(sql).toContain('CREATE ROLE "caprail_api";')
     expect(sql).toContain('GRANT "caprail_api" TO "postgres";')
     expect(sql).toContain('GRANT USAGE ON SCHEMA "public" TO "caprail_api";')
-    const grant = /GRANT SELECT ON (.*) TO "caprail_api";/.exec(sql)
-    const granted = grant?.[1]?.split(', ').map((name) => name.replaceAll('"', ''))
-    expect(granted?.sort()).toEqual(INDEX_TABLES)
+    // One GRANT per migration that adds index tables; together they are the index.
+    const granted = [...sql.matchAll(/GRANT SELECT ON (.*) TO "caprail_api";/g)].flatMap(
+      (grant) => grant[1]?.split(', ').map((name) => name.replaceAll('"', '')) ?? [],
+    )
+    expect(granted.sort()).toEqual(INDEX_TABLES)
     for (const table of SERVICE_TABLES) expect(sql).not.toMatch(new RegExp(`GRANT .*"${table}"`))
     // The only write: simulation reports. Identity columns draw from a sequence the
     // role must be allowed to use, or the first POST /attempts fails on nextval.
@@ -126,6 +130,9 @@ describe('migrations', () => {
     )
     expect(sql).toContain(
       'CREATE UNIQUE INDEX "transfer_attempts_tx_idx" ON "transfer_attempts" USING btree ("tx_signature","event_index") WHERE "transfer_attempts"."tx_signature" IS NOT NULL;',
+    )
+    expect(sql).toContain(
+      'CONSTRAINT "trades_tx_signature_event_index_pk" PRIMARY KEY("tx_signature","event_index")',
     )
   })
 })

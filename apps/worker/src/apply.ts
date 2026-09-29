@@ -3,6 +3,9 @@ import {
   type CompanyCreated,
   type IndexedEvent,
   type InvestorStatusSet,
+  type OfferAccepted,
+  type OfferCancelled,
+  type OfferCreated,
   type PolicySet,
   type ProgramTransaction,
   parseTransaction,
@@ -14,7 +17,14 @@ import {
 } from '@caprail/indexer'
 import { isRejectionReason } from '@caprail/shared'
 import { PublicKey } from '@solana/web3.js'
-import type { Holding, HoldingRow, IndexStore, IndexWriter, TokenRef } from './index-store.ts'
+import type {
+  Holding,
+  HoldingRow,
+  IndexStore,
+  IndexWriter,
+  OfferRef,
+  TokenRef,
+} from './index-store.ts'
 
 // The chain reads the applier needs beyond what the transaction carries. Each is
 // one RPC call, scripted in tests.
@@ -390,7 +400,122 @@ export function createApplier(deps: ApplierDeps): TransactionHandler {
       const row = await side(index, token, ctx, event)
       if (row !== null) await index.putHolding(row)
     }
+    // Either side may be a seller: less on the account can make an offer stale,
+    // more can make a stale one whole again.
+    await index.touchOffers(event.mint, [event.sourceOwner, event.destinationOwner], ctx.slot)
     return learned
+  }
+
+  async function knownOfferOf(index: IndexWriter, offer: string): Promise<OfferRef> {
+    const found = await index.offer(offer)
+    if (found === null) throw new NotIndexedYet('offer', offer)
+    return found
+  }
+
+  async function applyOfferCreated(
+    index: IndexWriter,
+    ctx: Ctx,
+    event: OfferCreated,
+  ): Promise<void> {
+    const token = await knownTokenOf(index, event.mint)
+    await index.createOffer({
+      offer: event.offer,
+      mint: event.mint,
+      companyId: token.companyId,
+      seller: event.seller,
+      offerId: event.offerId,
+      amount: event.amount,
+      remaining: event.amount,
+      pricePerUnit: event.pricePerUnit,
+      paymentMint: event.paymentMint,
+      rofrUntil: event.rofrUntil === 0 ? null : unix(event.rofrUntil),
+      status: 'open',
+      createdAt: unix(event.createdAt),
+      createdSignature: ctx.signature,
+      createdSlot: ctx.slot,
+      closedAt: null,
+      delegationRevoked: null,
+      updatedAt: ctx.blockTime,
+      touchedSlot: ctx.slot,
+      // `create_offer` itself checked the account at this slot: delegated to the
+      // offer for `amount`, holding at least that. Not an RPC reading, so
+      // `checked_at` stays null and the sweep confirms it.
+      available: event.amount,
+      staleReason: null,
+      checkedAt: null,
+      checkedSlot: ctx.slot,
+    })
+  }
+
+  // A trade takes `amount` from the delegation and from the balance alike, so what
+  // the account could deliver shrinks by the same amount and the reason, if any,
+  // still holds. Unknown stays unknown.
+  function availableAfter(
+    offer: OfferRef,
+    event: OfferAccepted,
+  ): Pick<OfferRef, 'available' | 'staleReason'> {
+    if (event.remaining === 0n || offer.available === null) {
+      return { available: null, staleReason: null }
+    }
+    const left = offer.available > event.amount ? offer.available - event.amount : 0n
+    const available = left < event.remaining ? left : event.remaining
+    if (available === event.remaining) return { available, staleReason: null }
+    return { available, staleReason: offer.staleReason ?? 'balance_short' }
+  }
+
+  async function applyOfferAccepted(
+    index: IndexWriter,
+    ctx: Ctx,
+    event: OfferAccepted & { eventIndex: number },
+  ): Promise<void> {
+    const offer = await knownOfferOf(index, event.offer)
+    const inserted = await index.recordTrade({
+      txSignature: ctx.signature,
+      eventIndex: event.eventIndex,
+      offer: event.offer,
+      mint: event.mint,
+      companyId: offer.companyId,
+      seller: event.seller,
+      buyer: event.buyer,
+      offerId: event.offerId,
+      amount: event.amount,
+      pricePerUnit: event.pricePerUnit,
+      payment: event.payment,
+      fee: event.fee,
+      paymentMint: event.paymentMint,
+      remaining: event.remaining,
+      acceptedAt: unix(event.acceptedAt),
+      slot: ctx.slot,
+      blockTime: ctx.blockTime,
+    })
+    if (!inserted) return
+    const filled = event.remaining === 0n
+    await index.changeOffer(event.offer, {
+      status: filled ? 'filled' : 'open',
+      remaining: event.remaining,
+      ...availableAfter(offer, event),
+      closedAt: filled ? unix(event.acceptedAt) : null,
+      slot: ctx.slot,
+      updatedAt: ctx.blockTime,
+    })
+  }
+
+  async function applyOfferCancelled(
+    index: IndexWriter,
+    ctx: Ctx,
+    event: OfferCancelled,
+  ): Promise<void> {
+    await knownOfferOf(index, event.offer)
+    await index.changeOffer(event.offer, {
+      status: 'cancelled',
+      remaining: event.remaining,
+      available: null,
+      staleReason: null,
+      closedAt: unix(event.cancelledAt),
+      delegationRevoked: event.delegationRevoked,
+      slot: ctx.slot,
+      updatedAt: ctx.blockTime,
+    })
   }
 
   async function applyRejection(
@@ -456,6 +581,12 @@ export function createApplier(deps: ApplierDeps): TransactionHandler {
         return applyInvestorStatusSet(index, ctx, event).then(() => undefined)
       case 'TransferAllowed':
         return applyTransferAllowed(index, ctx, event)
+      case 'OfferCreated':
+        return applyOfferCreated(index, ctx, event).then(() => undefined)
+      case 'OfferAccepted':
+        return applyOfferAccepted(index, ctx, event).then(() => undefined)
+      case 'OfferCancelled':
+        return applyOfferCancelled(index, ctx, event).then(() => undefined)
     }
   }
 

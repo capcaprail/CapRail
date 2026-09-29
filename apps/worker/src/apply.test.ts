@@ -2,6 +2,14 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ata, TOKEN_2022_PROGRAM_ID } from '@caprail/chain'
 import type { ProgramTransaction } from '@caprail/indexer'
+import {
+  acceptOfferTx,
+  offerAcceptedData,
+  offerCancelledData,
+  offerCreatedData,
+  offerInstructionTx,
+  transferAllowedData,
+} from '@caprail/indexer/testing'
 import { PublicKey } from '@solana/web3.js'
 import { describe, expect, it } from 'vitest'
 import { type ApplyLog, type ApplyRpc, createApplier, NotIndexedYet } from './apply.ts'
@@ -13,8 +21,10 @@ import type {
   IndexWriter,
   InvestorRow,
   InvestorStatusEventRow,
+  OfferRow,
   PolicyVersionRow,
   TokenRow,
+  TradeRow,
 } from './index-store.ts'
 
 // The US1 story as real transactions (`pnpm demo:us1 -- --dump fixtures/logs`),
@@ -61,6 +71,8 @@ function memoryIndex() {
   const statusEvents = new Map<string, InvestorStatusEventRow>()
   const attempts: AttemptRow[] = []
   const holdings = new Map<string, HoldingRow>()
+  const offers = new Map<string, OfferRow>()
+  const trades: TradeRow[] = []
   const key = (a: string, b: string | number) => `${a}:${b}`
 
   const writer: IndexWriter = {
@@ -160,9 +172,79 @@ function memoryIndex() {
       holdings.set(key(row.mint, row.wallet), row)
       return Promise.resolve()
     },
+    offer: (offer) => {
+      const row = offers.get(offer)
+      return Promise.resolve(
+        row === undefined
+          ? null
+          : {
+              offer,
+              mint: row.mint,
+              companyId: row.companyId,
+              status: row.status,
+              remaining: row.remaining,
+              available: row.available ?? null,
+              staleReason: row.staleReason ?? null,
+            },
+      )
+    },
+    createOffer: (row) => {
+      if (offers.has(row.offer)) return Promise.resolve(false)
+      offers.set(row.offer, row)
+      return Promise.resolve(true)
+    },
+    recordTrade: (row) => {
+      const duplicate = trades.some(
+        (t) => t.txSignature === row.txSignature && t.eventIndex === row.eventIndex,
+      )
+      if (!duplicate) trades.push(row)
+      return Promise.resolve(!duplicate)
+    },
+    changeOffer: (offer, change) => {
+      const row = offers.get(offer)
+      if (
+        row !== undefined &&
+        row.status === 'open' &&
+        (change.status === 'cancelled' || row.remaining > change.remaining)
+      ) {
+        const { slot, ...fields } = change
+        offers.set(offer, {
+          ...row,
+          ...fields,
+          checkedAt: null,
+          touchedSlot: row.touchedSlot > slot ? row.touchedSlot : slot,
+        })
+      }
+      return Promise.resolve()
+    },
+    touchOffers: (mint, wallets, slot) => {
+      for (const [offer, row] of offers) {
+        if (row.mint !== mint || !wallets.includes(row.seller) || row.status !== 'open') continue
+        offers.set(offer, {
+          ...row,
+          touchedSlot: row.touchedSlot > slot ? row.touchedSlot : slot,
+          checkedAt:
+            row.checkedSlot !== null && row.checkedSlot !== undefined && row.checkedSlot >= slot
+              ? row.checkedAt
+              : null,
+        })
+      }
+      return Promise.resolve()
+    },
   }
   const store: IndexStore = { write: (fn) => fn(writer) }
-  return { store, companies, tokens, policies, investors, statusEvents, attempts, holdings }
+  return {
+    store,
+    companies,
+    tokens,
+    policies,
+    investors,
+    statusEvents,
+    attempts,
+    holdings,
+    offers,
+    trades,
+  }
 }
 
 // Chain reads, scripted: every call is counted so a test can say which path ran.
@@ -522,5 +604,247 @@ describe('createApplier on records ahead of the index', () => {
     await apply(refused)
     expect(infos).toEqual(['program refused an instruction'])
     expect(attempts).toHaveLength(0)
+  })
+})
+
+// ── The market (US2) ──────────────────────────────────────────────────────────────
+// On top of the US1 story: alice (99 990 shares) offers 3 000, bob buys in two
+// parts, a second offer is cancelled. The transactions are hand-encoded Borsh
+// (`@caprail/indexer/testing`) — there are no real market fixtures until T042.
+
+const pk = (n: number) => new PublicKey(new Uint8Array(32).fill(n)).toBase58()
+const OFFER = pk(11)
+const OFFER_2 = pk(12)
+const USDC = pk(13)
+const PRICE = 1_500_000n
+const MARKET_SLOT = Math.max(...[...fixtures.values()].map((f) => f.slot)) + 100
+const MARKET_TIME = 1_790_000_000
+
+async function market() {
+  const index = await replay(story)
+  const companyRow = [...index.companies.values()][0]
+  const alice = [...index.holdings.values()].find((h) => h.amount === 99_990n)?.wallet
+  const bob = [...index.holdings.values()].find((h) => h.amount === 10n)?.wallet
+  if (companyRow === undefined || alice === undefined || bob === undefined) {
+    throw new Error('the US1 story did not leave alice, bob and the company')
+  }
+  const bobAta = ata(new PublicKey(bob), new PublicKey(MINT)).toBase58()
+  let n = 0
+  const at = (slotOffset: number) => {
+    n += 1
+    return {
+      signature: `market-${n}`,
+      slot: MARKET_SLOT + slotOffset,
+      blockTime: MARKET_TIME + slotOffset,
+    }
+  }
+  const create = (offer: string, offerId: bigint, amount: bigint, slotOffset: number) =>
+    offerInstructionTx(
+      at(slotOffset),
+      'CreateOffer',
+      offerCreatedData({
+        offer,
+        company: companyRow.company,
+        mint: MINT,
+        seller: alice,
+        offerId,
+        amount,
+        pricePerUnit: PRICE,
+        paymentMint: USDC,
+        rofrUntil: 0,
+        createdAt: MARKET_TIME + slotOffset,
+      }),
+    )
+  const accept = (amount: bigint, remaining: bigint, slotOffset: number) => {
+    const payment = amount * PRICE
+    return acceptOfferTx(
+      at(slotOffset),
+      transferAllowedData({
+        company: companyRow.company,
+        mint: MINT,
+        source: ALICE_ATA,
+        destination: bobAta,
+        sourceOwner: alice,
+        destinationOwner: bob,
+        amount,
+        fromTreasury: false,
+        policyVersion: 2,
+      }),
+      offerAcceptedData({
+        offer: OFFER,
+        company: companyRow.company,
+        mint: MINT,
+        seller: alice,
+        buyer: bob,
+        offerId: 1n,
+        amount,
+        pricePerUnit: PRICE,
+        payment,
+        fee: payment / 100n,
+        paymentMint: USDC,
+        remaining,
+        acceptedAt: MARKET_TIME + slotOffset,
+      }),
+    )
+  }
+  const cancel = (offer: string, offerId: bigint, remaining: bigint, slotOffset: number) =>
+    offerInstructionTx(
+      at(slotOffset),
+      'CancelOffer',
+      offerCancelledData({
+        offer,
+        mint: MINT,
+        seller: alice,
+        offerId,
+        remaining,
+        delegationRevoked: true,
+        cancelledAt: MARKET_TIME + slotOffset,
+      }),
+    )
+  return { ...index, companyRow, alice, bob, create, accept, cancel }
+}
+
+describe('createApplier on the market', () => {
+  it('mirrors a new offer as open and whole, known from the instruction, not yet read', async () => {
+    const m = await market()
+    await m.apply(m.create(OFFER, 1n, 3_000n, 0))
+    expect(m.offers.get(OFFER)).toMatchObject({
+      mint: MINT,
+      companyId: m.companyRow.companyId,
+      seller: m.alice,
+      offerId: 1n,
+      amount: 3_000n,
+      remaining: 3_000n,
+      pricePerUnit: PRICE,
+      paymentMint: USDC,
+      rofrUntil: null,
+      status: 'open',
+      createdAt: new Date(MARKET_TIME * 1000),
+      available: 3_000n,
+      staleReason: null,
+      checkedAt: null,
+      checkedSlot: BigInt(MARKET_SLOT),
+      touchedSlot: BigInt(MARKET_SLOT),
+    })
+  })
+
+  it('records each trade, shrinks the offer, then fills it; the shares move in holdings', async () => {
+    const m = await market()
+    await m.apply(m.create(OFFER, 1n, 3_000n, 0))
+    await m.apply(m.accept(1_000n, 2_000n, 10))
+    expect(m.trades).toHaveLength(1)
+    expect(m.trades[0]).toMatchObject({
+      txSignature: 'market-2',
+      // after the hook's `TransferAllowed`
+      eventIndex: 1,
+      offer: OFFER,
+      seller: m.alice,
+      buyer: m.bob,
+      amount: 1_000n,
+      payment: 1_500_000_000n,
+      fee: 15_000_000n,
+      remaining: 2_000n,
+      slot: BigInt(MARKET_SLOT + 10),
+    })
+    expect(m.offers.get(OFFER)).toMatchObject({
+      status: 'open',
+      remaining: 2_000n,
+      available: 2_000n,
+      staleReason: null,
+      closedAt: null,
+      touchedSlot: BigInt(MARKET_SLOT + 10),
+    })
+    expect(m.attempts.at(-1)).toMatchObject({ outcome: 'allowed', amount: 1_000n })
+
+    await m.apply(m.accept(2_000n, 0n, 20))
+    expect(m.offers.get(OFFER)).toMatchObject({
+      status: 'filled',
+      remaining: 0n,
+      available: null,
+      staleReason: null,
+      closedAt: new Date((MARKET_TIME + 20) * 1000),
+    })
+    expect(m.holdings.get(`${MINT}:${m.alice}`)?.amount).toBe(99_990n - 3_000n)
+    expect(m.holdings.get(`${MINT}:${m.bob}`)?.amount).toBe(10n + 3_000n)
+  })
+
+  it('closes a cancelled offer with what was left and whether the delegation was revoked', async () => {
+    const m = await market()
+    await m.apply(m.create(OFFER_2, 2n, 500n, 0))
+    await m.apply(m.cancel(OFFER_2, 2n, 500n, 5))
+    expect(m.offers.get(OFFER_2)).toMatchObject({
+      status: 'cancelled',
+      remaining: 500n,
+      delegationRevoked: true,
+      closedAt: new Date((MARKET_TIME + 5) * 1000),
+      available: null,
+      staleReason: null,
+    })
+  })
+
+  it('is idempotent: a replayed trade or cancellation changes nothing', async () => {
+    const m = await market()
+    const created = m.create(OFFER, 1n, 3_000n, 0)
+    const trade = m.accept(1_000n, 2_000n, 10)
+    for (const tx of [created, trade, created, trade]) await m.apply(tx)
+    expect(m.trades).toHaveLength(1)
+    expect(m.offers.get(OFFER)?.remaining).toBe(2_000n)
+    expect(m.holdings.get(`${MINT}:${m.alice}`)?.amount).toBe(99_990n - 1_000n)
+
+    const cancelled = m.cancel(OFFER, 1n, 2_000n, 30)
+    await m.apply(cancelled)
+    const after = structuredClone(m.offers.get(OFFER))
+    await m.apply(cancelled)
+    // A trade that arrives after the cancellation (out of order) cannot reopen it.
+    await m.apply(m.accept(500n, 1_500n, 40))
+    expect(m.offers.get(OFFER)).toEqual(after)
+  })
+
+  it('keeps a known shortfall through a partial fill', async () => {
+    const m = await market()
+    await m.apply(m.create(OFFER, 1n, 3_000n, 0))
+    const row = m.offers.get(OFFER)
+    if (row === undefined) throw new Error('no offer')
+    // As a sweep would leave it: the account holds only 800 of the 3 000.
+    m.offers.set(OFFER, { ...row, available: 800n, staleReason: 'balance_short' })
+    await m.apply(m.accept(300n, 2_700n, 10))
+    expect(m.offers.get(OFFER)).toMatchObject({
+      remaining: 2_700n,
+      available: 500n,
+      staleReason: 'balance_short',
+    })
+  })
+
+  it('invalidates the reading of an offer when the seller balance moves outside the market', async () => {
+    const m = await market()
+    await m.apply(m.create(OFFER, 1n, 3_000n, 0))
+    const row = m.offers.get(OFFER)
+    if (row === undefined) throw new Error('no offer')
+    const read = new Date('2026-09-29T10:00:00Z')
+    // Read at a slot after the first transfer below: that reading already saw it.
+    m.offers.set(OFFER, { ...row, checkedAt: read, checkedSlot: BigInt(MARKET_SLOT + 50) })
+    const transfer = (slot: number, signature: string) => ({
+      ...fixture('transfer-allowed'),
+      signature,
+      slot,
+    })
+    await m.apply(transfer(MARKET_SLOT + 40, 'plain-transfer-1'))
+    expect(m.offers.get(OFFER)).toMatchObject({
+      checkedAt: read,
+      touchedSlot: BigInt(MARKET_SLOT + 40),
+    })
+    // A transfer after the reading: the reading no longer counts.
+    await m.apply(transfer(MARKET_SLOT + 60, 'plain-transfer-2'))
+    expect(m.offers.get(OFFER)).toMatchObject({
+      checkedAt: null,
+      touchedSlot: BigInt(MARKET_SLOT + 60),
+    })
+  })
+
+  it('throws NotIndexedYet for a trade or cancellation of an offer it has not seen', async () => {
+    const m = await market()
+    await expect(m.apply(m.accept(1_000n, 2_000n, 10))).rejects.toThrow(NotIndexedYet)
+    await expect(m.apply(m.cancel(OFFER, 1n, 3_000n, 20))).rejects.toThrow(NotIndexedYet)
+    expect(m.trades).toHaveLength(0)
   })
 })

@@ -1,4 +1,10 @@
-import { ATTEMPT_ORIGINS, ATTEMPT_OUTCOMES, INVESTOR_STATUSES } from '@caprail/shared'
+import {
+  ATTEMPT_ORIGINS,
+  ATTEMPT_OUTCOMES,
+  INVESTOR_STATUSES,
+  OFFER_STALE_REASONS,
+  OFFER_STATUSES,
+} from '@caprail/shared'
 import { type SQL, sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
@@ -64,6 +70,8 @@ export const attemptOutcome = pgEnum('attempt_outcome', ATTEMPT_OUTCOMES)
 // are reported by the panel when the wallet's preflight refused the transfer, which
 // never reaches the chain (PLAN → risk 2).
 export const attemptOrigin = pgEnum('attempt_origin', ATTEMPT_ORIGINS)
+export const offerStatus = pgEnum('offer_status', OFFER_STATUSES)
+export const offerStaleReason = pgEnum('offer_stale_reason', OFFER_STALE_REASONS)
 
 export const indexerCursor = pgTable(
   'indexer_cursor',
@@ -351,6 +359,126 @@ export const holdings = pgTable(
     apiSelect(
       'holdings',
       sql`${t.companyId} = ${scopedCompanyId} OR ${t.wallet} = ${scopedWallet}`,
+    ),
+  ],
+)
+
+// ── Index of the market (US2) ─────────────────────────────────────────────────────
+
+// Mirror of `Offer`, keyed by its PDA (the account is never closed, so the address
+// is never reused). The terms come from `OfferCreated`; `remaining`, `status` and
+// `closed_at` from `OfferAccepted`/`OfferCancelled`.
+//
+// The rest is what the events cannot say. The offer is a delegation, not escrow, so
+// the seller can revoke it, spend the shares or be frozen without our program
+// seeing it (PLAN → risk 6). `available` is how much of `remaining` the seller's
+// account can deliver as last read, and `stale_reason` names why that is less
+// than `remaining` (null: all of it). The worker re-reads open offers whose
+// `checked_at` is null or older than 30 s; `touched_slot` is the last slot at which
+// the chain changed something the reading depends on, so a read from before it is
+// discarded instead of written.
+export const offers = pgTable(
+  'offers',
+  {
+    offer: text('offer').primaryKey(),
+    mint: text('mint')
+      .notNull()
+      .references(() => tokens.mint),
+    companyId: u64('company_id')
+      .notNull()
+      .references(() => companies.companyId),
+    seller: text('seller').notNull(),
+    offerId: u64('offer_id').notNull(),
+    amount: u64('amount').notNull(),
+    remaining: u64('remaining').notNull(),
+    pricePerUnit: u64('price_per_unit').notNull(),
+    paymentMint: text('payment_mint').notNull(),
+    // null where the chain holds 0: no ROFR window was opened.
+    rofrUntil: unixTime('rofr_until'),
+    status: offerStatus('status').notNull(),
+    createdAt: unixTime('created_at').notNull(),
+    createdSignature: text('created_signature').notNull(),
+    createdSlot: bigint('created_slot', { mode: 'bigint' }).notNull(),
+    // `cancelled_at`, or `accepted_at` of the trade that filled it.
+    closedAt: unixTime('closed_at'),
+    // From `OfferCancelled`: false when the delegation was no longer this offer's.
+    delegationRevoked: boolean('delegation_revoked'),
+    updatedAt: unixTime('updated_at').notNull(),
+    touchedSlot: bigint('touched_slot', { mode: 'bigint' }).notNull(),
+    available: u64('available'),
+    staleReason: offerStaleReason('stale_reason'),
+    checkedAt: unixTime('checked_at'),
+    checkedSlot: bigint('checked_slot', { mode: 'bigint' }),
+  },
+  (t) => [
+    // The PDA seeds; seller first — the cabinet (`/me`) lists a wallet's own offers.
+    uniqueIndex('offers_seller_idx').on(t.seller, t.mint, t.offerId),
+    index('offers_mint_status_idx').on(t.mint, t.status),
+    index('offers_company_id_idx').on(t.companyId),
+    // The stale sweep: open offers, least recently checked first.
+    index('offers_open_checked_idx').on(t.checkedAt).where(sql`${t.status} = 'open'`),
+    check('offers_remaining_bounded', sql`${t.remaining} <= ${t.amount}`),
+    // Only an open offer can be cancelled, and an open offer has something left.
+    check('offers_filled_means_zero', sql`(${t.status} = 'filled') = (${t.remaining} = 0)`),
+    check(
+      'offers_executability_only_when_open',
+      sql`${t.status} = 'open' OR (${t.available} IS NULL AND ${t.staleReason} IS NULL)`,
+    ),
+    check(
+      'offers_stale_means_short',
+      sql`${t.available} IS NULL OR (${t.available} <= ${t.remaining} AND (${t.staleReason} IS NULL) = (${t.available} = ${t.remaining}))`,
+    ),
+    denyAll('offers'),
+    // The company sees its book, a seller their own offers. What other investors
+    // may see — offers they would be admitted to buy (FR-011) — is T040's policy,
+    // next to the filter that decides it.
+    apiSelect('offers', sql`${t.companyId} = ${scopedCompanyId} OR ${t.seller} = ${scopedWallet}`),
+  ],
+)
+
+// One row per `OfferAccepted`. The share transfer of the same trade is also a
+// `transfer_attempts` row (the hook's `TransferAllowed`); this is the money side.
+// `payment` is what the buyer paid; the seller received `payment - fee`.
+export const trades = pgTable(
+  'trades',
+  {
+    txSignature: text('tx_signature').notNull(),
+    eventIndex: integer('event_index').notNull(),
+    offer: text('offer')
+      .notNull()
+      .references(() => offers.offer),
+    mint: text('mint')
+      .notNull()
+      .references(() => tokens.mint),
+    companyId: u64('company_id')
+      .notNull()
+      .references(() => companies.companyId),
+    seller: text('seller').notNull(),
+    buyer: text('buyer').notNull(),
+    offerId: u64('offer_id').notNull(),
+    amount: u64('amount').notNull(),
+    pricePerUnit: u64('price_per_unit').notNull(),
+    payment: u64('payment').notNull(),
+    fee: u64('fee').notNull(),
+    paymentMint: text('payment_mint').notNull(),
+    // The offer's `remaining` after this trade.
+    remaining: u64('remaining').notNull(),
+    acceptedAt: unixTime('accepted_at').notNull(),
+    slot: bigint('slot', { mode: 'bigint' }).notNull(),
+    blockTime: unixTime('block_time').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.txSignature, t.eventIndex] }),
+    index('trades_mint_idx').on(t.mint, t.blockTime),
+    index('trades_company_id_idx').on(t.companyId, t.blockTime),
+    index('trades_offer_idx').on(t.offer),
+    index('trades_buyer_idx').on(t.buyer),
+    index('trades_seller_idx').on(t.seller),
+    check('trades_fee_within_payment', sql`${t.fee} <= ${t.payment}`),
+    denyAll('trades'),
+    apiSelect(
+      'trades',
+      sql`${t.companyId} = ${scopedCompanyId} OR ${t.buyer} = ${scopedWallet} OR ${t.seller} = ${scopedWallet}`,
     ),
   ],
 )

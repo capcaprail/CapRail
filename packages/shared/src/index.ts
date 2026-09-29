@@ -73,6 +73,12 @@ export {
   u64StringSchema,
 } from './company-api.ts'
 export {
+  OFFER_STALE_REASONS,
+  OFFER_STATUSES,
+  type OfferStaleReason,
+  type OfferStatus,
+} from './market.ts'
+export {
   addressSchema,
   decodeBase58,
   encodeBase58,

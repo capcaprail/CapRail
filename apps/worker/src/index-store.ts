@@ -1,5 +1,7 @@
 import { type Db, schema, type Tx } from '@caprail/db'
-import { and, eq, isNull, lt, lte, or } from 'drizzle-orm'
+import type { OfferStaleReason, OfferStatus } from '@caprail/shared'
+import { and, asc, eq, gt, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm'
+import type { OfferBook } from './stale.ts'
 
 export type CompanyRow = typeof schema.companies.$inferInsert
 export type TokenRow = typeof schema.tokens.$inferInsert
@@ -8,6 +10,8 @@ export type InvestorRow = typeof schema.investors.$inferInsert
 export type InvestorStatusEventRow = typeof schema.investorStatusEvents.$inferInsert
 export type AttemptRow = typeof schema.transferAttempts.$inferInsert
 export type HoldingRow = typeof schema.holdings.$inferInsert
+export type OfferRow = typeof schema.offers.$inferInsert
+export type TradeRow = typeof schema.trades.$inferInsert
 
 // What the applier needs to know about a mint it has already indexed.
 export type TokenRef = { mint: string; companyId: bigint; treasury: string }
@@ -20,6 +24,30 @@ export type Holding = {
 }
 
 export type Roles = { admin: string; complianceOfficer: string; setAt: Date }
+
+// What a trade or a cancellation needs to know about the offer it closes or shrinks.
+export type OfferRef = {
+  offer: string
+  mint: string
+  companyId: bigint
+  status: OfferStatus
+  remaining: bigint
+  available: bigint | null
+  staleReason: OfferStaleReason | null
+}
+
+// The offer after a trade or a cancellation. Both invalidate the last reading of
+// the seller's account (`checked_at` → null) and move `touched_slot` forward.
+export type OfferChange = {
+  status: OfferStatus
+  remaining: bigint
+  available: bigint | null
+  staleReason: OfferStaleReason | null
+  closedAt: Date | null
+  delegationRevoked?: boolean
+  slot: bigint
+  updatedAt: Date
+}
 
 // Every write the applier makes, as the index sees it — so the applier can be
 // tested against a map and the SQL below stays a thin translation. The mirror
@@ -41,6 +69,17 @@ export type IndexWriter = {
   recordAttempt: (row: AttemptRow) => Promise<boolean>
   holding: (mint: string, wallet: string) => Promise<Holding | null>
   putHolding: (row: HoldingRow) => Promise<void>
+  offer: (offer: string) => Promise<OfferRef | null>
+  // true when the row was inserted.
+  createOffer: (row: OfferRow) => Promise<boolean>
+  // true when the row was inserted; false when (tx_signature, event_index) was there.
+  recordTrade: (row: TradeRow) => Promise<boolean>
+  // Applies only to an open offer, and only forward: a trade must leave less than
+  // there is, so a replayed or out-of-order one changes nothing.
+  changeOffer: (offer: string, change: OfferChange) => Promise<void>
+  // Something at `slot` moved one of these wallets' token accounts for the mint:
+  // readings of their open offers from before `slot` no longer count.
+  touchOffers: (mint: string, wallets: readonly string[], slot: bigint) => Promise<void>
 }
 
 export type IndexStore = {
@@ -48,6 +87,10 @@ export type IndexStore = {
   // holdings delta, or the reverse, must not survive a crash in between.
   write: <T>(fn: (index: IndexWriter) => Promise<T>) => Promise<T>
 }
+
+// Raw SQL parameters skip the column's driver mapping, so a bigint goes as text.
+const slotAtLeast = (slot: bigint) =>
+  sql`greatest(${schema.offers.touchedSlot}, ${String(slot)}::bigint)`
 
 function writerOn(tx: Tx): IndexWriter {
   return {
@@ -178,11 +221,116 @@ function writerOn(tx: Tx): IndexWriter {
           set: current,
         })
     },
+
+    offer: async (offer) => {
+      const rows = await tx
+        .select({
+          offer: schema.offers.offer,
+          mint: schema.offers.mint,
+          companyId: schema.offers.companyId,
+          status: schema.offers.status,
+          remaining: schema.offers.remaining,
+          available: schema.offers.available,
+          staleReason: schema.offers.staleReason,
+        })
+        .from(schema.offers)
+        .where(eq(schema.offers.offer, offer))
+        .limit(1)
+      return rows[0] ?? null
+    },
+
+    createOffer: async (row) => {
+      const inserted = await tx
+        .insert(schema.offers)
+        .values(row)
+        .onConflictDoNothing()
+        .returning({ offer: schema.offers.offer })
+      return inserted.length > 0
+    },
+
+    recordTrade: async (row) => {
+      const inserted = await tx
+        .insert(schema.trades)
+        .values(row)
+        .onConflictDoNothing()
+        .returning({ offer: schema.trades.offer })
+      return inserted.length > 0
+    },
+
+    changeOffer: async (offer, change) => {
+      const { slot, ...fields } = change
+      await tx
+        .update(schema.offers)
+        .set({
+          ...fields,
+          checkedAt: null,
+          touchedSlot: slotAtLeast(slot),
+        })
+        .where(
+          and(
+            eq(schema.offers.offer, offer),
+            eq(schema.offers.status, 'open'),
+            change.status === 'cancelled'
+              ? undefined
+              : gt(schema.offers.remaining, change.remaining),
+          ),
+        )
+    },
+
+    // A reading taken at or after `slot` already saw the change and stays.
+    touchOffers: async (mint, wallets, slot) => {
+      await tx
+        .update(schema.offers)
+        .set({
+          touchedSlot: slotAtLeast(slot),
+          checkedAt: sql`CASE WHEN ${schema.offers.checkedSlot} >= ${String(slot)}::bigint THEN ${schema.offers.checkedAt} END`,
+        })
+        .where(
+          and(
+            eq(schema.offers.mint, mint),
+            inArray(schema.offers.seller, [...wallets]),
+            eq(schema.offers.status, 'open'),
+          ),
+        )
+    },
   }
 }
 
 export function indexStore(db: Db): IndexStore {
   return {
     write: (fn) => db.transaction((tx) => fn(writerOn(tx))),
+  }
+}
+
+// The stale sweep's side of `offers`: outside the chain transaction, one statement
+// per offer, so a reading never holds a lock across an RPC call.
+export function offerBook(db: Db): OfferBook {
+  const o = schema.offers
+  return {
+    due: (before, limit) =>
+      db
+        .select({ offer: o.offer, mint: o.mint, seller: o.seller, remaining: o.remaining })
+        .from(o)
+        .where(and(eq(o.status, 'open'), or(isNull(o.checkedAt), lt(o.checkedAt, before))))
+        .orderBy(sql`${o.checkedAt} ASC NULLS FIRST`, asc(o.offer))
+        .limit(limit),
+
+    record: async (offer, reading) => {
+      const slot = String(reading.checkedSlot)
+      const written = await db
+        .update(o)
+        .set(reading)
+        .where(
+          and(
+            eq(o.offer, offer.offer),
+            eq(o.status, 'open'),
+            eq(o.remaining, offer.remaining),
+            sql`${o.touchedSlot} <= ${slot}::bigint`,
+            sql`(${o.checkedSlot} IS NULL OR ${o.checkedSlot} <= ${slot}::bigint)`,
+          ),
+        )
+        .returning({ offer: o.offer })
+      return written.length > 0
+    },
   }
 }

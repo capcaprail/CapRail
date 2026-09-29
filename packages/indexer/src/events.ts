@@ -1,4 +1,4 @@
-// The six Anchor events of US1 as the index reads them. Shapes follow
+// The Anchor events the index reads: six of US1, three of the market (US2). Shapes follow
 // `programs/caprail/src/events.rs`; every field the worker writes is here, so it
 // never has to look at the transaction's accounts.
 import { BorshCoder } from '@anchor-lang/core'
@@ -77,6 +77,55 @@ export type TransferAllowed = {
   policyVersion: number
 }
 
+// Prices and payments are in minimal units of `paymentMint`; `pricePerUnit` is per
+// minimal unit of the share token, so a payment is `amount * pricePerUnit` exactly.
+export type OfferCreated = {
+  kind: 'OfferCreated'
+  offer: string
+  company: string
+  mint: string
+  seller: string
+  offerId: bigint
+  amount: bigint
+  pricePerUnit: bigint
+  paymentMint: string
+  // unix seconds; 0 — no ROFR window
+  rofrUntil: number
+  createdAt: number
+}
+
+export type OfferAccepted = {
+  kind: 'OfferAccepted'
+  offer: string
+  company: string
+  mint: string
+  seller: string
+  buyer: string
+  offerId: bigint
+  amount: bigint
+  pricePerUnit: bigint
+  // the whole payment; the seller received `payment - fee`
+  payment: bigint
+  fee: bigint
+  paymentMint: string
+  // after this trade; 0 — the offer is filled
+  remaining: bigint
+  acceptedAt: number
+}
+
+// No `company`: the mint places it.
+export type OfferCancelled = {
+  kind: 'OfferCancelled'
+  offer: string
+  mint: string
+  seller: string
+  offerId: bigint
+  remaining: bigint
+  // false — the delegation was no longer this offer's, nothing to revoke
+  delegationRevoked: boolean
+  cancelledAt: number
+}
+
 export type IndexEvent =
   | CompanyCreated
   | TokenCreated
@@ -84,6 +133,9 @@ export type IndexEvent =
   | RolesSet
   | InvestorStatusSet
   | TransferAllowed
+  | OfferCreated
+  | OfferAccepted
+  | OfferCancelled
 
 export type IndexEventKind = IndexEvent['kind']
 
@@ -235,21 +287,73 @@ const READERS: Record<string, (data: Fields) => IndexEvent> = {
     fromTreasury: bool(d, 'fromTreasury'),
     policyVersion: num(d, 'policyVersion'),
   }),
+  offerCreated: (d) => ({
+    kind: 'OfferCreated',
+    offer: pubkey(d, 'offer'),
+    company: pubkey(d, 'company'),
+    mint: pubkey(d, 'mint'),
+    seller: pubkey(d, 'seller'),
+    offerId: big(d, 'offerId'),
+    amount: big(d, 'amount'),
+    pricePerUnit: big(d, 'pricePerUnit'),
+    paymentMint: pubkey(d, 'paymentMint'),
+    rofrUntil: unix(d, 'rofrUntil'),
+    createdAt: unix(d, 'createdAt'),
+  }),
+  offerAccepted: (d) => ({
+    kind: 'OfferAccepted',
+    offer: pubkey(d, 'offer'),
+    company: pubkey(d, 'company'),
+    mint: pubkey(d, 'mint'),
+    seller: pubkey(d, 'seller'),
+    buyer: pubkey(d, 'buyer'),
+    offerId: big(d, 'offerId'),
+    amount: big(d, 'amount'),
+    pricePerUnit: big(d, 'pricePerUnit'),
+    payment: big(d, 'payment'),
+    fee: big(d, 'fee'),
+    paymentMint: pubkey(d, 'paymentMint'),
+    remaining: big(d, 'remaining'),
+    acceptedAt: unix(d, 'acceptedAt'),
+  }),
+  offerCancelled: (d) => ({
+    kind: 'OfferCancelled',
+    offer: pubkey(d, 'offer'),
+    mint: pubkey(d, 'mint'),
+    seller: pubkey(d, 'seller'),
+    offerId: big(d, 'offerId'),
+    remaining: big(d, 'remaining'),
+    delegationRevoked: bool(d, 'delegationRevoked'),
+    cancelledAt: unix(d, 'cancelledAt'),
+  }),
 }
 
 export const EVENT_NAMES = Object.keys(READERS)
 
-// All six events are declared by `caprail` — the hook emits `TransferAllowed` with
+// Every event is declared by `caprail` — the hook emits `TransferAllowed` with
 // the type it imports from there, and an event's discriminator is its name, not
 // the program — so one coder decodes a `Program data:` line from either program.
 const coder = new BorshCoder(IDL)
 
+const DISCRIMINATOR_LENGTH = 8
+
 // null: not one of ours (or not an event at all). Unknown discriminators are how
 // another program's `Program data:` in the same transaction looks — not an error.
+//
+// The layout decoder reads zeros past the end of a short payload and ignores bytes
+// left over, so a program whose event gained or lost a field against the vendored
+// IDL would still decode — into plausible numbers. Encoding the result back and
+// comparing it with the payload is what turns that drift into an error.
 export function decodeEvent(base64: string): IndexEvent | null {
   const decoded = coder.events.decode(base64)
   if (decoded === null) return null
   const read = READERS[decoded.name]
   if (read === undefined) return null
+  const body = Buffer.from(base64, 'base64').subarray(DISCRIMINATOR_LENGTH)
+  if (!coder.types.encode(decoded.name, decoded.data).equals(body)) {
+    throw new Error(
+      `event ${decoded.name}: ${body.length} bytes do not round-trip through the IDL — program and IDL disagree`,
+    )
+  }
   return read(fields(decoded.data, `event ${decoded.name}`))
 }
