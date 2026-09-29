@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSseParser, openEventStream, type SseFrame, type StreamStatus } from './sse.ts'
 
 describe('createSseParser', () => {
@@ -35,7 +35,22 @@ function bodyOf(chunks: string[], hold?: Promise<void>): ReadableStream<Uint8Arr
   })
 }
 
+// The loop reschedules itself through `setTimeout`, and on real time a busy machine
+// (the parallel `pnpm gate`) fits fewer reconnects into a wait than the test counts
+// on. On fake timers each backoff fires exactly when the test advances past it, and
+// the awaits in between are flushed; every step asserts where the clock stands.
+const tick = async (ms: number) => {
+  await vi.advanceTimersByTimeAsync(ms)
+}
+
 describe('openEventStream', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('sends the bearer, delivers frames, reconnects after the body closes with a backoff', async () => {
     const frames: SseFrame[] = []
     const statuses: StreamStatus[] = []
@@ -62,10 +77,14 @@ describe('openEventStream', () => {
       retryMs: [5, 50],
       setTimeout: (fn, ms) => {
         waits.push(ms)
-        return globalThis.setTimeout(fn, 0)
+        return globalThis.setTimeout(fn, ms)
       },
     })
-    await new Promise((resolve) => globalThis.setTimeout(resolve, 20))
+    await tick(4)
+    // The first body closed; the reconnect waits for its backoff, not sooner.
+    expect(calls).toBe(1)
+    expect(frames.map((frame) => frame.event)).toEqual(['ready'])
+    await tick(1)
     expect(headers).toEqual(['Bearer tok', 'Bearer tok'])
     expect(frames.map((frame) => frame.event)).toEqual(['ready', 'attempt'])
     // The first body delivered a frame, so the retry after it starts from the first delay.
@@ -79,8 +98,9 @@ describe('openEventStream', () => {
     ])
     stream.stop()
     release()
-    await new Promise((resolve) => globalThis.setTimeout(resolve, 5))
+    await tick(100)
     expect(calls).toBe(2)
+    expect(waits).toEqual([5])
   })
 
   it('backs off on a non-2xx and stops when there is no token', async () => {
@@ -97,10 +117,18 @@ describe('openEventStream', () => {
       retryMs: [1, 2, 3],
       setTimeout: (fn, ms) => {
         waits.push(ms)
-        return globalThis.setTimeout(fn, 0)
+        return globalThis.setTimeout(fn, ms)
       },
     })
-    await new Promise((resolve) => globalThis.setTimeout(resolve, 20))
+    // One attempt per backoff step, each only once its delay has passed.
+    await tick(0)
+    expect([calls, waits]).toEqual([1, [1]])
+    await tick(1)
+    expect([calls, waits]).toEqual([2, [1, 2]])
+    await tick(2)
+    expect([calls, waits]).toEqual([3, [1, 2, 3]])
+    // The token is gone: the next turn ends the loop instead of fetching.
+    await tick(100)
     expect(calls).toBe(3)
     expect(waits).toEqual([1, 2, 3])
     stream.stop()
