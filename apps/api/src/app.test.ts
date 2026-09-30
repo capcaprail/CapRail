@@ -22,6 +22,7 @@ function build(overrides: Partial<AppDeps> = {}) {
       memberships: () => Promise.resolve([]),
     },
     reader,
+    platform: () => Promise.resolve(null),
     feed: createFeed({
       source: (id, since) => reader.feed({ companyId: id }, id, since),
       onError: () => {},

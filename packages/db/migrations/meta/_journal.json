@@ -29,6 +29,13 @@
       "when": 1790699788568,
       "tag": "0003_us2_market",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790788116529,
+      "tag": "0004_us2_market_visibility",
+      "breakpoints": true
     }
   ]
 }

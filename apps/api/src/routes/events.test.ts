@@ -57,6 +57,7 @@ function build(heartbeatMs = 10_000) {
     health: { ping: () => Promise.resolve(), cursor: () => Promise.resolve(null) },
     auth: { nonces: memoryNonceStore(), tokens, memberships: reader.membershipsOf },
     reader,
+    platform: () => Promise.resolve(null),
     feed,
     heartbeatMs,
   })

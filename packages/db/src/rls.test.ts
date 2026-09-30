@@ -119,6 +119,41 @@ describe('migrations', () => {
     )
   })
 
+  it('show other wallets an open offer only through the admission function', () => {
+    const wallet = `nullif(current_setting('app.wallet', true), '')`
+    const market = policy('offers_market_select', 'offers').exec(sql)
+    expect(market?.[1]).toBe('SELECT')
+    expect(market?.[2]).toBe(
+      `USING ("offers"."status" = 'open' AND ${schema.ADMITS_FUNCTION}("offers"."mint", ${wallet}, now()))`,
+    )
+    // Every other permissive SELECT on offers is the company's or the seller's own.
+    const offerPolicies = [...sql.matchAll(/CREATE POLICY "(\w+)" ON "offers" AS PERMISSIVE/g)]
+    expect(offerPolicies.map((m) => m[1]).sort()).toEqual([
+      'offers_api_select',
+      'offers_market_select',
+    ])
+  })
+
+  it('define the admission function as the hook checks, before its first use, closed to anon', () => {
+    const name = `"public"."${schema.ADMITS_FUNCTION}"`
+    const created = sql.indexOf(`CREATE FUNCTION ${name}(`)
+    expect(created).toBeGreaterThanOrEqual(0)
+    expect(created).toBeLessThan(sql.indexOf(`${schema.ADMITS_FUNCTION}("offers"."mint"`))
+    const body = sql.slice(created, sql.indexOf('$$;', created))
+    // The owner reads what the viewer may not; a pinned search_path keeps a caller's
+    // temp objects from standing in for `tokens`/`investors`.
+    expect(body).toContain('SECURITY DEFINER')
+    expect(body).toContain('SET search_path = public, pg_temp')
+    expect(body).toContain('p_wallet IS NOT NULL')
+    expect(body).toContain('NOT t.require_accreditation')
+    expect(body).toContain(`i.status = 'approved' AND i.expires_at > p_at`)
+    const signature = `${name}(text, text, timestamp with time zone)`
+    expect(sql).toContain(
+      `REVOKE ALL ON FUNCTION ${signature} FROM PUBLIC, "anon", "authenticated";`,
+    )
+    expect(sql).toContain(`GRANT EXECUTE ON FUNCTION ${signature} TO "caprail_api";`)
+  })
+
   it('name the same role in withTenant as the migration creates', () => {
     expect(API_ROLE_SQL).toBe(`set local role "${schema.apiRole.name}"`)
     expect(sql).toContain(`CREATE ROLE "${schema.apiRole.name}";`)

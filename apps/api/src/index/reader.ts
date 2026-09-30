@@ -1,20 +1,27 @@
 import { type Db, schema, type TenantScope, type Tx, withTenant } from '@caprail/db'
-import type {
-  AttemptReport,
-  CapTable,
-  CompanyView,
-  FeedEvent,
-  Holder,
-  InvestorView,
-  JournalEntry,
-  JournalPage,
-  JournalQuery,
-  Membership,
-  Role,
-  TokenView,
-  WalletAddress,
+import {
+  type AttemptReport,
+  admission,
+  type CabinetRecord,
+  type CapTable,
+  type CompanyOffersQuery,
+  type CompanyView,
+  type FeedEvent,
+  type Holder,
+  type InvestorView,
+  type JournalEntry,
+  type JournalPage,
+  type JournalQuery,
+  type MarketOfferRecord,
+  type MarketOffersQuery,
+  type Membership,
+  type OfferRecord,
+  type Position,
+  type Role,
+  type TokenView,
+  type WalletAddress,
 } from '@caprail/shared'
-import { and, asc, desc, eq, gt, gte, lte, type SQL, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, gte, lte, ne, type SQL, sql } from 'drizzle-orm'
 
 // High-water marks of the three tables the panel's feed watches. `policy_versions`
 // has no serial id, so its mark is the slot (inclusive) plus the `mint:version` keys
@@ -58,6 +65,21 @@ export type IndexReader = {
     reportedBy: WalletAddress,
     now: Date,
   ) => Promise<{ id: bigint } | null>
+  // The company's book, newest first.
+  companyOffers: (
+    scope: TenantScope,
+    companyId: string,
+    query: CompanyOffersQuery,
+  ) => Promise<OfferRecord[]>
+  // Open offers of others that `viewer` would be admitted to buy at `at` (FR-011).
+  marketOffers: (
+    scope: TenantScope,
+    viewer: WalletAddress,
+    query: MarketOffersQuery,
+    at: Date,
+  ) => Promise<MarketOfferRecord[]>
+  // The wallet's positions and its own open offers (FR-016).
+  cabinet: (scope: TenantScope, wallet: WalletAddress, at: Date) => Promise<CabinetRecord>
 }
 
 const iso = (date: Date): string => date.toISOString()
@@ -75,6 +97,7 @@ export function decodeCursor(cursor: string): { blockTime: Date; id: bigint } | 
 }
 
 type TokenRow = typeof schema.tokens.$inferSelect
+type OfferRow = typeof schema.offers.$inferSelect
 type InvestorRow = typeof schema.investors.$inferSelect
 type AttemptRow = typeof schema.transferAttempts.$inferSelect
 type HoldingRow = typeof schema.holdings.$inferSelect
@@ -136,6 +159,85 @@ export function percentOf(amount: bigint, totalSupply: bigint): number {
   return Number((amount * 10_000n) / totalSupply) / 100
 }
 
+export function offerRecord(row: OfferRow): OfferRecord {
+  return {
+    offer: row.offer,
+    mint: row.mint,
+    companyId: row.companyId.toString(),
+    seller: row.seller as WalletAddress,
+    offerId: row.offerId.toString(),
+    amount: row.amount.toString(),
+    remaining: row.remaining.toString(),
+    pricePerUnit: row.pricePerUnit.toString(),
+    paymentMint: row.paymentMint,
+    rofrUntil: row.rofrUntil === null ? null : iso(row.rofrUntil),
+    status: row.status,
+    createdAt: iso(row.createdAt),
+    closedAt: row.closedAt === null ? null : iso(row.closedAt),
+    available: row.available === null ? null : row.available.toString(),
+    staleReason: row.staleReason,
+    checkedAt: row.checkedAt === null ? null : iso(row.checkedAt),
+  }
+}
+
+export type PositionInput = {
+  companyId: string
+  companyName: string
+  token: Pick<TokenView, 'mint' | 'name' | 'symbol' | 'decimals' | 'policy'>
+  amount: bigint
+  record: Pick<InvestorView, 'status' | 'expiresAt' | 'jurisdiction' | 'investorType'> | null
+}
+
+function position(input: PositionInput, now: Date): Position {
+  const { token, record } = input
+  return {
+    companyId: input.companyId,
+    token: {
+      mint: token.mint,
+      companyName: input.companyName,
+      name: token.name,
+      symbol: token.symbol,
+      decimals: token.decimals,
+    },
+    policy: token.policy,
+    amount: input.amount.toString(),
+    vested: input.amount.toString(),
+    unvested: '0',
+    registry:
+      record === null
+        ? null
+        : {
+            status: record.status,
+            expiresAt: record.expiresAt,
+            jurisdiction: record.jurisdiction,
+            investorType: record.investorType,
+          },
+    admission: admission(token.policy, record, now),
+  }
+}
+
+// A registry entry with nothing held and a holding without a record are both
+// positions; one per mint, by company then mint.
+export function mergePositions(inputs: PositionInput[], now: Date): Position[] {
+  const byMint = new Map<string, PositionInput>()
+  for (const input of inputs) {
+    const seen = byMint.get(input.token.mint)
+    byMint.set(
+      input.token.mint,
+      seen === undefined
+        ? input
+        : { ...seen, amount: seen.amount + input.amount, record: seen.record ?? input.record },
+    )
+  }
+  return [...byMint.values()]
+    .sort((a, b) => {
+      const byCompany = BigInt(a.companyId) - BigInt(b.companyId)
+      if (byCompany !== 0n) return byCompany < 0n ? -1 : 1
+      return a.token.mint < b.token.mint ? -1 : a.token.mint > b.token.mint ? 1 : 0
+    })
+    .map((input) => position(input, now))
+}
+
 function holder(row: HoldingRow, totalSupply: bigint): Holder {
   return {
     wallet: row.wallet as WalletAddress,
@@ -177,7 +279,7 @@ async function companyTokens(tx: Tx, companyId: bigint): Promise<TokenRow[]> {
 
 export function drizzleIndexReader(db: Db): IndexReader {
   const { companies, tokens, investors, holdings, transferAttempts, investorStatusEvents } = schema
-  const { policyVersions } = schema
+  const { policyVersions, offers } = schema
 
   // The wallet's own view of `companies` is exactly its memberships: the SELECT
   // policy admits a row for a role key or a registry entry, nothing else.
@@ -442,6 +544,87 @@ export function drizzleIndexReader(db: Db): IndexReader {
           .returning({ id: transferAttempts.id })
         const row = inserted[0]
         return row === undefined ? null : { id: row.id }
+      }),
+
+    companyOffers: (scope, companyId, query) =>
+      withTenant(db, scope, async (tx) => {
+        const conditions: SQL[] = [eq(offers.companyId, BigInt(companyId))]
+        if (query.mint !== undefined) conditions.push(eq(offers.mint, query.mint))
+        if (query.status !== undefined) conditions.push(eq(offers.status, query.status))
+        const rows = await tx
+          .select()
+          .from(offers)
+          .where(and(...conditions))
+          .orderBy(desc(offers.createdSlot), asc(offers.offer))
+        return rows.map(offerRecord)
+      }),
+
+    marketOffers: (scope, viewer, query, at) =>
+      withTenant(db, scope, async (tx) => {
+        // RLS already limits a wallet session to what `caprail_admits` passes at the
+        // database clock; the same function is called here with the API's, so the
+        // answer is for the moment the route names, whatever scope it was given. The
+        // viewer's own offers are the cabinet's — buying from oneself fails on chain.
+        const conditions: SQL[] = [
+          eq(offers.status, 'open'),
+          ne(offers.seller, viewer),
+          schema.admitsSql(offers.mint, viewer, sql`${iso(at)}::timestamptz`),
+        ]
+        if (query.mint !== undefined) conditions.push(eq(offers.mint, query.mint))
+        const rows = await tx
+          .select({ offer: offers, token: tokens, companyName: companies.name })
+          .from(offers)
+          .innerJoin(tokens, eq(tokens.mint, offers.mint))
+          .innerJoin(companies, eq(companies.companyId, offers.companyId))
+          .where(and(...conditions))
+          .orderBy(desc(offers.createdSlot), asc(offers.offer))
+        return rows.map((row) => ({
+          ...offerRecord(row.offer),
+          token: {
+            companyName: row.companyName,
+            name: row.token.name,
+            symbol: row.token.symbol,
+            decimals: row.token.decimals,
+          },
+        }))
+      }),
+
+    cabinet: (scope, wallet, at) =>
+      withTenant(db, scope, async (tx) => {
+        const registry = await tx
+          .select({ investor: investors, token: tokens, companyName: companies.name })
+          .from(investors)
+          .innerJoin(tokens, eq(tokens.mint, investors.mint))
+          .innerJoin(companies, eq(companies.companyId, investors.companyId))
+          .where(eq(investors.wallet, wallet))
+        const held = await tx
+          .select({ holding: holdings, token: tokens, companyName: companies.name })
+          .from(holdings)
+          .innerJoin(tokens, eq(tokens.mint, holdings.mint))
+          .innerJoin(companies, eq(companies.companyId, holdings.companyId))
+          .where(and(eq(holdings.wallet, wallet), gt(holdings.amount, 0n)))
+        const own = await tx
+          .select()
+          .from(offers)
+          .where(and(eq(offers.seller, wallet), eq(offers.status, 'open')))
+          .orderBy(desc(offers.createdSlot), asc(offers.offer))
+        const inputs: PositionInput[] = [
+          ...registry.map((row) => ({
+            companyId: row.token.companyId.toString(),
+            companyName: row.companyName,
+            token: tokenView(row.token),
+            amount: 0n,
+            record: investorView(row.investor),
+          })),
+          ...held.map((row) => ({
+            companyId: row.token.companyId.toString(),
+            companyName: row.companyName,
+            token: tokenView(row.token),
+            amount: row.holding.amount,
+            record: null,
+          })),
+        ]
+        return { positions: mergePositions(inputs, at), offers: own.map(offerRecord) }
       }),
   }
 }

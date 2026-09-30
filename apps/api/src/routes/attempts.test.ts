@@ -19,6 +19,7 @@ function build(data: Seed = seed(), overrides: Partial<AppDeps> = {}) {
     health: { ping: () => Promise.resolve(), cursor: () => Promise.resolve(null) },
     auth: { nonces: memoryNonceStore(), tokens, memberships: reader.membershipsOf },
     reader,
+    platform: () => Promise.resolve(null),
     feed: createFeed({
       source: (id, since) => reader.feed({ companyId: id }, id, since),
       onError: () => {},

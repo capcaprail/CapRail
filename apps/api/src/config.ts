@@ -8,6 +8,8 @@ export const DEFAULT_PORT = 8787
 // HS256 keys shorter than the hash output are the one thing RFC 7518 forbids.
 export const JWT_SECRET_MIN_LENGTH = 32
 
+const httpUrl = filledEnv.pipe(z.url({ protocol: /^https?$/ }))
+
 const originList = z
   .string()
   .transform((value) => value.split(',').map((origin) => origin.trim()))
@@ -24,6 +26,9 @@ export const apiConfigSchema = z
       .transform((value) => value === 'true' || value === '1'),
     logLevel: z.enum(LOG_LEVELS).prefault('info'),
     webOrigins: originList,
+    // Read once, for `PlatformConfig` (the fee the market quotes); the index is the
+    // API's source for everything else.
+    rpcUrl: httpUrl,
   })
   .refine((config) => config.allowDirectDatabase || isPooled(config.databaseUrl), {
     path: ['databaseUrl'],
@@ -40,5 +45,6 @@ export function apiConfigFromEnv(env: Record<string, string | undefined>): ApiCo
     allowDirectDatabase: env.ALLOW_DIRECT_DATABASE,
     logLevel: env.LOG_LEVEL,
     webOrigins: env.WEB_ORIGIN,
+    rpcUrl: env.DEVNET_RPC_URL,
   })
 }

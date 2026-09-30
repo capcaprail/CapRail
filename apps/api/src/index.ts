@@ -1,5 +1,7 @@
+import { createCaprailProgram } from '@caprail/chain'
 import { createDb, schema } from '@caprail/db'
 import { serve } from '@hono/node-server'
+import { Connection } from '@solana/web3.js'
 import { desc } from 'drizzle-orm'
 import { createApp } from './app.ts'
 import { createSessionTokens } from './auth/jwt.ts'
@@ -8,6 +10,7 @@ import { apiConfigFromEnv } from './config.ts'
 import { createFeed } from './index/feed.ts'
 import { drizzleIndexReader } from './index/reader.ts'
 import { createLogger } from './logger.ts'
+import { chainPlatform } from './platform.ts'
 import type { IndexerCursor } from './routes/health.ts'
 
 function main(): void {
@@ -25,6 +28,9 @@ function main(): void {
   }
 
   const reader = drizzleIndexReader(database.db)
+  const platform = chainPlatform(
+    createCaprailProgram(new Connection(config.rpcUrl, { commitment: 'confirmed' })),
+  )
   const feed = createFeed({
     // The poller runs as the company: every panel of that company shares it.
     source: (companyId, since) => reader.feed({ companyId }, companyId, since),
@@ -42,6 +48,7 @@ function main(): void {
     },
     reader,
     feed,
+    platform,
   })
 
   const server = serve({ fetch: app.fetch, port: config.port, hostname: '0.0.0.0' }, (info) => {

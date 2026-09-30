@@ -54,6 +54,13 @@ export const apiRole = pgRole('caprail_api')
 const scopedCompanyId = sql`nullif(current_setting('app.company_id', true), '')::numeric`
 const scopedWallet = sql`nullif(current_setting('app.wallet', true), '')`
 
+// `caprail_admits(mint, wallet, at)` — the hook's admission check over the index
+// (migration 0004): true when the mint's policy does not require accreditation, or
+// the wallet's record is `approved` and expires after `at`; false for a null wallet.
+export const ADMITS_FUNCTION = 'caprail_admits'
+export const admitsSql = (mint: SQL | AnyPgColumn, wallet: SQL | string, at: SQL): SQL =>
+  sql`${sql.raw(ADMITS_FUNCTION)}(${mint}, ${wallet}, ${at})`
+
 const apiSelect = (table: string, using: SQL) =>
   pgPolicy(`${table}_api_select`, { for: 'select', to: apiRole, using })
 
@@ -123,9 +130,15 @@ export const companies = pgTable(
     denyAll('companies'),
     // A company row is visible to its scoped session, to either role key, and to any
     // wallet in its registry — the same three sources `memberships` are computed from.
+    // Two more since US2, both for wallets that may have no record: a holder (a policy
+    // without accreditation lets shares reach anyone — the cabinet must still name the
+    // company) and a viewer of one of its offers (the market names what is on sale).
+    // `offers` here is itself under RLS, so this opens exactly the companies whose
+    // offers the wallet may see. No cycle: `holdings` and `offers` policies never read
+    // `companies`, and `caprail_admits` reads as its owner.
     apiSelect(
       'companies',
-      sql`${t.companyId} = ${scopedCompanyId} OR ${t.admin} = ${scopedWallet} OR ${t.complianceOfficer} = ${scopedWallet} OR EXISTS (SELECT 1 FROM investors i WHERE i.company_id = ${t.companyId} AND i.wallet = ${scopedWallet})`,
+      sql`${t.companyId} = ${scopedCompanyId} OR ${t.admin} = ${scopedWallet} OR ${t.complianceOfficer} = ${scopedWallet} OR EXISTS (SELECT 1 FROM investors i WHERE i.company_id = ${t.companyId} AND i.wallet = ${scopedWallet}) OR EXISTS (SELECT 1 FROM holdings h WHERE h.company_id = ${t.companyId} AND h.wallet = ${scopedWallet} AND h.amount > 0) OR EXISTS (SELECT 1 FROM offers o WHERE o.company_id = ${t.companyId})`,
     ),
   ],
 )
@@ -429,10 +442,18 @@ export const offers = pgTable(
       sql`${t.available} IS NULL OR (${t.available} <= ${t.remaining} AND (${t.staleReason} IS NULL) = (${t.available} = ${t.remaining}))`,
     ),
     denyAll('offers'),
-    // The company sees its book, a seller their own offers. What other investors
-    // may see — offers they would be admitted to buy (FR-011) — is T040's policy,
-    // next to the filter that decides it.
+    // The company sees its book, a seller their own offers.
     apiSelect('offers', sql`${t.companyId} = ${scopedCompanyId} OR ${t.seller} = ${scopedWallet}`),
+    // Everyone else sees an open offer only while the hook would let the shares reach
+    // them (FR-011). The check needs `tokens` and `investors` rows the wallet may not
+    // see — a policy without accreditation admits wallets with no record — so it is a
+    // SECURITY DEFINER function (migration 0004, by hand: drizzle-kit does not model
+    // functions); `GET /market/offers` calls the same function with the API's clock.
+    pgPolicy('offers_market_select', {
+      for: 'select',
+      to: apiRole,
+      using: sql`${t.status} = 'open' AND ${admitsSql(t.mint, scopedWallet, sql`now()`)}`,
+    }),
   ],
 )
 

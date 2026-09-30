@@ -6,7 +6,12 @@ const DIRECT = 'postgres://postgres:pw@db.abc.supabase.co:5432/postgres'
 
 const SECRET = 'x'.repeat(32)
 
-const base = { DATABASE_URL: POOLED, WEB_ORIGIN: 'http://localhost:5173', JWT_SECRET: SECRET }
+const base = {
+  DATABASE_URL: POOLED,
+  WEB_ORIGIN: 'http://localhost:5173',
+  JWT_SECRET: SECRET,
+  DEVNET_RPC_URL: 'https://api.devnet.solana.com',
+}
 
 describe('apiConfigFromEnv', () => {
   it('parses a filled-in environment with defaults', () => {
@@ -51,5 +56,13 @@ describe('apiConfigFromEnv', () => {
     expect(() => apiConfigFromEnv({ WEB_ORIGIN: base.WEB_ORIGIN, JWT_SECRET: SECRET })).toThrow()
     expect(() => apiConfigFromEnv({ ...base, DATABASE_URL: 'mysql://x:y@h:6543/d' })).toThrow()
     expect(() => apiConfigFromEnv({ ...base, WEB_ORIGIN: 'localhost' })).toThrow()
+  })
+
+  it('needs an http(s) rpc url for the platform config', () => {
+    expect(apiConfigFromEnv(base).rpcUrl).toBe('https://api.devnet.solana.com')
+    expect(() => apiConfigFromEnv({ ...base, DEVNET_RPC_URL: undefined })).toThrow()
+    expect(() =>
+      apiConfigFromEnv({ ...base, DEVNET_RPC_URL: 'wss://api.devnet.solana.com' }),
+    ).toThrow()
   })
 })

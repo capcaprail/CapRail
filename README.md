@@ -101,7 +101,8 @@ About `.env`:
   the session pooler (`:5432`) and is used by `db:migrate` only. Both connect as
   `postgres`; the API switches to the `caprail_api` role per request, so
   row-level security applies to what the panel reads.
-- `DEVNET_RPC_URL` / `DEVNET_WS_URL` are the node the worker follows. The public
+- `DEVNET_RPC_URL` / `DEVNET_WS_URL` are the node the worker follows; the API
+  reads `DEVNET_RPC_URL` too, once, for the platform fee it quotes. The public
   devnet node rate-limits the worker and the panel from one address — a keyed
   endpoint (Helius or similar, devnet subdomain) is what the numbers below were
   measured on.

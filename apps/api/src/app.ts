@@ -7,11 +7,15 @@ import { type Logger, requestLogger } from './logger.ts'
 import { requireCompanyRole, requireSession } from './middleware/auth.ts'
 import { errorHandler, notFoundHandler } from './middleware/errors.ts'
 import { type RateLimitOptions, rateLimit } from './middleware/rate-limit.ts'
+import type { PlatformSource } from './platform.ts'
 import { attemptsRoute } from './routes/attempts.ts'
 import { type AuthDeps, authRoute } from './routes/auth.ts'
 import { companiesRoute, PANEL_ROLES } from './routes/companies.ts'
 import { eventsRoute } from './routes/events.ts'
 import { type HealthDeps, healthRoute } from './routes/health.ts'
+import { marketRoute } from './routes/market.ts'
+import { meRoute } from './routes/me.ts'
+import { offersRoute } from './routes/offers.ts'
 
 export type AppDeps = {
   logger: Logger
@@ -21,6 +25,8 @@ export type AppDeps = {
   // The index as the session may see it; `feed` polls it for the SSE stream.
   reader: IndexReader
   feed: Feed
+  // `PlatformConfig` — the fee every quote is computed with.
+  platform: PlatformSource
   rateLimit?: RateLimitOptions
   now?: () => Date
   heartbeatMs?: number
@@ -46,6 +52,9 @@ export function createApp(deps: AppDeps) {
   app.use('/companies/:id/*', requireSession(deps.auth.tokens))
   app.use('/companies/:id/*', requireCompanyRole(deps.reader.rolesOf, PANEL_ROLES))
   app.use('/attempts', requireSession(deps.auth.tokens))
+  // The wallet's own views: a session, no company role — scoped to the wallet alone.
+  app.use('/market/*', requireSession(deps.auth.tokens))
+  app.use('/me', requireSession(deps.auth.tokens))
 
   app.notFound(notFoundHandler)
   app.onError(errorHandler)
@@ -63,6 +72,9 @@ export function createApp(deps: AppDeps) {
       }),
     )
     .route('/', attemptsRoute({ reader: deps.reader, ...timed }))
+    .route('/', offersRoute({ reader: deps.reader, platform: deps.platform }))
+    .route('/', marketRoute({ reader: deps.reader, platform: deps.platform, ...timed }))
+    .route('/', meRoute({ reader: deps.reader, platform: deps.platform, ...timed }))
 }
 
 export type App = ReturnType<typeof createApp>

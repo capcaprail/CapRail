@@ -1,19 +1,23 @@
 import type { TenantScope } from '@caprail/db'
-import type {
-  CapTable,
-  CompanyView,
-  FeedEvent,
-  InvestorView,
-  JournalEntry,
-  Membership,
-  Role,
-  WalletAddress,
+import {
+  admission,
+  type CapTable,
+  type CompanyView,
+  type FeedEvent,
+  type InvestorView,
+  type JournalEntry,
+  type Membership,
+  type OfferRecord,
+  type Role,
+  type WalletAddress,
 } from '@caprail/shared'
 import {
   decodeCursor,
   encodeCursor,
   type FeedMarks,
   type IndexReader,
+  mergePositions,
+  type PositionInput,
   percentOf,
   policyKey,
 } from './reader.ts'
@@ -46,6 +50,8 @@ export type MemoryIndex = {
   attempts: (JournalEntry & { companyId: string; reportedBy: string | null })[]
   statusEvents: (MemoryStatusEvent & { companyId: string })[]
   policyVersions: (MemoryPolicyVersion & { companyId: string })[]
+  // Newest first, as `created_slot desc` orders them.
+  offers: OfferRecord[]
 }
 
 export function memoryIndex(seed: Partial<MemoryIndex> = {}): MemoryIndex {
@@ -56,8 +62,18 @@ export function memoryIndex(seed: Partial<MemoryIndex> = {}): MemoryIndex {
     attempts: [],
     statusEvents: [],
     policyVersions: [],
+    offers: [],
     ...seed,
   }
+}
+
+// `caprail_admits` over arrays: the same check the migration's function makes.
+function admits(index: MemoryIndex, mint: string, wallet: string | undefined, at: Date): boolean {
+  if (wallet === undefined) return false
+  const token = index.companies.flatMap((c) => c.tokens).find((t) => t.mint === mint)
+  if (token === undefined) return false
+  const record = index.investors.find((i) => i.mint === mint && i.wallet === wallet) ?? null
+  return admission(token.policy, record, at).admitted
 }
 
 function rolesIn(index: MemoryIndex, company: CompanyView, wallet: string): Role[] {
@@ -260,6 +276,78 @@ export function memoryIndexReader(index: MemoryIndex): IndexReader {
         reportedBy,
       })
       return Promise.resolve({ id })
+    },
+
+    companyOffers: (scope, companyId, query) => {
+      if (!visible(index, scope, companyId)) return Promise.resolve([])
+      return Promise.resolve(
+        index.offers.filter(
+          (o) =>
+            o.companyId === companyId &&
+            (query.mint === undefined || o.mint === query.mint) &&
+            (query.status === undefined || o.status === query.status),
+        ),
+      )
+    },
+
+    marketOffers: (scope, viewer, query, at) => {
+      // The RLS policies first (company, seller, or admitted to an open offer), then
+      // the route's own filter — as the SQL reader does.
+      const rlsVisible = (o: OfferRecord) =>
+        o.companyId === scope.companyId ||
+        o.seller === scope.wallet ||
+        (o.status === 'open' && admits(index, o.mint, scope.wallet, at))
+      return Promise.resolve(
+        index.offers
+          .filter(rlsVisible)
+          .filter(
+            (o) =>
+              o.status === 'open' &&
+              o.seller !== viewer &&
+              admits(index, o.mint, viewer, at) &&
+              (query.mint === undefined || o.mint === query.mint),
+          )
+          .flatMap((o) => {
+            const company = companyOf(o.mint)
+            const token = company?.tokens.find((t) => t.mint === o.mint)
+            if (company === undefined || token === undefined) return []
+            return [
+              {
+                ...o,
+                token: {
+                  companyName: company.name,
+                  name: token.name,
+                  symbol: token.symbol,
+                  decimals: token.decimals,
+                },
+              },
+            ]
+          }),
+      )
+    },
+
+    cabinet: (scope, wallet, at) => {
+      if (scope.wallet !== wallet) return Promise.resolve({ positions: [], offers: [] })
+      const inputs: PositionInput[] = []
+      const place = (mint: string) => {
+        const company = companyOf(mint)
+        const token = company?.tokens.find((t) => t.mint === mint)
+        return company === undefined || token === undefined
+          ? null
+          : { companyId: company.companyId, companyName: company.name, token }
+      }
+      for (const record of index.investors.filter((i) => i.wallet === wallet)) {
+        const placed = place(record.mint)
+        if (placed !== null) inputs.push({ ...placed, amount: 0n, record })
+      }
+      for (const holding of index.holdings.filter((h) => h.wallet === wallet && h.amount > 0n)) {
+        const placed = place(holding.mint)
+        if (placed !== null) inputs.push({ ...placed, amount: holding.amount, record: null })
+      }
+      return Promise.resolve({
+        positions: mergePositions(inputs, at),
+        offers: index.offers.filter((o) => o.seller === wallet && o.status === 'open'),
+      })
     },
   }
 }
