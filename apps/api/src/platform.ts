@@ -1,4 +1,4 @@
-import { type CaprailProgram, platformPda, quoteOffer } from '@caprail/chain'
+import { type CaprailProgram, fetchPlatform, quoteOffer } from '@caprail/chain'
 import type { OfferQuote, OfferRecord, OfferView, PlatformView } from '@caprail/shared'
 
 // The platform's configuration as the routes need it: null until `init_platform` has
@@ -27,14 +27,20 @@ export function cachedPlatform(read: PlatformSource): PlatformSource {
   }
 }
 
-export function chainPlatform(program: CaprailProgram): PlatformSource {
+export function chainPlatform(
+  program: CaprailProgram,
+  paymentSymbol: string | null,
+): PlatformSource {
   return cachedPlatform(async () => {
-    const account = await program.account.platformConfig.fetchNullable(platformPda())
-    if (account === null) return null
+    const platform = await fetchPlatform(program)
+    if (platform === null) return null
     return {
-      feeBps: account.feeBps,
-      paymentMint: account.paymentMint.toBase58(),
-      feeTreasury: account.feeTreasury.toBase58(),
+      feeBps: platform.feeBps,
+      paymentMint: platform.paymentMint.toBase58(),
+      feeTreasury: platform.feeTreasury.toBase58(),
+      paymentTokenProgram: platform.paymentTokenProgram.toBase58(),
+      paymentDecimals: platform.paymentDecimals,
+      paymentSymbol,
     }
   })
 }

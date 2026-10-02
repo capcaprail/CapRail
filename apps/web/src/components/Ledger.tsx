@@ -12,7 +12,7 @@ export function Table({
   children,
   ...rest
 }: {
-  kind?: 'cap' | 'inv' | 'jr' | 'off' | 'my' | 'kv' | 'reg' | 'tok'
+  kind?: 'cap' | 'inv' | 'jr' | 'off' | 'my' | 'kv' | 'reg' | 'tok' | 'pos'
   className?: string
   children: ReactNode
 } & Record<`data-${string}`, string | undefined>) {

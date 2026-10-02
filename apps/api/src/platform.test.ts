@@ -6,6 +6,9 @@ const PLATFORM: PlatformView = {
   feeBps: 100,
   paymentMint: 'DemoUsdc1111111111111111111111111111111111111',
   feeTreasury: 'FeeTreasury11111111111111111111111111111111',
+  paymentTokenProgram: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb',
+  paymentDecimals: 6,
+  paymentSymbol: 'dUSD',
 }
 
 const offer = (patch: Partial<OfferRecord> = {}): OfferRecord => ({

@@ -30,6 +30,7 @@ function main(): void {
   const reader = drizzleIndexReader(database.db)
   const platform = chainPlatform(
     createCaprailProgram(new Connection(config.rpcUrl, { commitment: 'confirmed' })),
+    config.paymentSymbol,
   )
   const feed = createFeed({
     // The poller runs as the company: every panel of that company shares it.

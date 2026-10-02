@@ -65,4 +65,11 @@ describe('apiConfigFromEnv', () => {
       apiConfigFromEnv({ ...base, DEVNET_RPC_URL: 'wss://api.devnet.solana.com' }),
     ).toThrow()
   })
+
+  it('labels the payment mint only when told to; unset or blank is null, not a guess', () => {
+    expect(apiConfigFromEnv(base).paymentSymbol).toBeNull()
+    expect(apiConfigFromEnv({ ...base, PAYMENT_SYMBOL: '' }).paymentSymbol).toBeNull()
+    expect(apiConfigFromEnv({ ...base, PAYMENT_SYMBOL: ' dUSD ' }).paymentSymbol).toBe('dUSD')
+    expect(() => apiConfigFromEnv({ ...base, PAYMENT_SYMBOL: 'X'.repeat(11) })).toThrow()
+  })
 })

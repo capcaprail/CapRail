@@ -103,6 +103,7 @@ export {
   offerRecordSchema,
   offerTokenSchema,
   offerViewSchema,
+  PAYMENT_SYMBOL_MAX_LENGTH,
   type PlatformView,
   type Position,
   platformViewSchema,

@@ -7,13 +7,13 @@ import { CompanyPanel } from './company/Panel.tsx'
 import { CompanySetup, IssueToken } from './company/setup/CompanySetup.tsx'
 import { webConfig } from './config.ts'
 import { short } from './format.ts'
-import { Cabinet } from './screens/Cabinet.tsx'
+import { Cabinet } from './investor/cabinet/Cabinet.tsx'
+import { Market } from './investor/market/Market.tsx'
 import { CompanyChooser } from './screens/CompanyChooser.tsx'
 import { Landing } from './screens/Landing.tsx'
-import { Market } from './screens/Market.tsx'
 
-// Routes by role (FR-017). The company panel is live (US1); the cabinet and the
-// market are still the M0 mock-ups until US2.
+// Routes by role (FR-017). The company panel (US1), the cabinet and the market (US2)
+// all read the index and sign in the wallet.
 export function AppRoutes() {
   return (
     <Routes>

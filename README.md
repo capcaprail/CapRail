@@ -106,6 +106,9 @@ About `.env`:
   devnet node rate-limits the worker and the panel from one address — a keyed
   endpoint (Helius or similar, devnet subdomain) is what the numbers below were
   measured on.
+- `PAYMENT_SYMBOL` (optional) labels the payment mint in prices — `dUSD` for the demo
+  stablecoin, which carries no on-chain metadata. Unset, the panel shows the mint's
+  address instead of a symbol it might not be.
 - `VITE_*` values are baked into the web bundle and are public by construction.
 - `JWT_SECRET` — at least 32 bytes of randomness.
 

@@ -21,6 +21,9 @@ const PLATFORM: PlatformView = {
   feeBps: 100,
   paymentMint: PAYMENT_MINT,
   feeTreasury: 'FeeTreasury11111111111111111111111111111111',
+  paymentTokenProgram: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb',
+  paymentDecimals: 6,
+  paymentSymbol: 'dUSD',
 }
 
 function build(data: MarketSeed = marketSeed(), overrides: Partial<AppDeps> = {}) {

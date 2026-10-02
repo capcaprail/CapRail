@@ -553,8 +553,13 @@
   .off .tr {
     grid-template-columns: 1fr 130px 5px 100px 100px 100px 140px 110px 140px 100px;
   }
+  /* the investor's own open offers: the money columns repeat the storefront's */
   .my .tr {
-    grid-template-columns: 1fr 5px 150px 200px 180px 100px;
+    grid-template-columns: 1fr 5px 130px 140px 150px 120px 150px 120px;
+  }
+  /* cabinet holdings: one line per mint the wallet holds or is registered for */
+  .pos .tr {
+    grid-template-columns: 1fr 5px 170px 220px 130px 140px;
   }
   .off .tr.pick {
     cursor: pointer;

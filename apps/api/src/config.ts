@@ -1,4 +1,5 @@
 import { databaseUrlSchema, filledEnv, isPooled, POOLER_PORT } from '@caprail/db'
+import { PAYMENT_SYMBOL_MAX_LENGTH } from '@caprail/shared'
 import { z } from 'zod'
 
 export const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const
@@ -29,6 +30,15 @@ export const apiConfigSchema = z
     // Read once, for `PlatformConfig` (the fee the market quotes); the index is the
     // API's source for everything else.
     rpcUrl: httpUrl,
+    // The label of the payment mint in quotes (`dUSD` on the demo). Not on chain —
+    // the demo stablecoin has no metadata — and unset means the panel names the mint
+    // by its address rather than by a symbol it might not be.
+    paymentSymbol: z
+      .string()
+      .trim()
+      .max(PAYMENT_SYMBOL_MAX_LENGTH)
+      .optional()
+      .transform((value) => (value === undefined || value === '' ? null : value)),
   })
   .refine((config) => config.allowDirectDatabase || isPooled(config.databaseUrl), {
     path: ['databaseUrl'],
@@ -46,5 +56,6 @@ export function apiConfigFromEnv(env: Record<string, string | undefined>): ApiCo
     logLevel: env.LOG_LEVEL,
     webOrigins: env.WEB_ORIGIN,
     rpcUrl: env.DEVNET_RPC_URL,
+    paymentSymbol: env.PAYMENT_SYMBOL,
   })
 }

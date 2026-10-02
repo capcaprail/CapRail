@@ -67,11 +67,18 @@ export function admission(
 }
 
 // `PlatformConfig` as read from the chain. It has no update instruction, so this is
-// the fee every trade on this deployment pays.
+// the fee every trade on this deployment pays. The payment mint's program and decimals
+// are read from the mint itself; the symbol is the deployment's label for it — the
+// demo stablecoin carries no metadata, and null means "name it by its address".
+export const PAYMENT_SYMBOL_MAX_LENGTH = 10
+
 export const platformViewSchema = z.object({
   feeBps: z.number().int().min(0).max(10_000),
   paymentMint: z.string().min(1),
   feeTreasury: z.string().min(1),
+  paymentTokenProgram: z.string().min(1),
+  paymentDecimals: z.number().int().min(0).max(255),
+  paymentSymbol: z.string().min(1).max(PAYMENT_SYMBOL_MAX_LENGTH).nullable(),
 })
 export type PlatformView = z.infer<typeof platformViewSchema>
 

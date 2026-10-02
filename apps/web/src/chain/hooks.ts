@@ -1,6 +1,6 @@
 import { type CaprailProgram, createCaprailProgram, type TxPlan } from '@caprail/chain'
 import { useConnection, useWallet } from '@solana/wallet-adapter-react'
-import { useQueryClient } from '@tanstack/react-query'
+import { type QueryKey, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
 import { submitPlan, type TxOutcome, type TxPhase } from './send.ts'
 
@@ -55,13 +55,21 @@ export function useTransaction(): TransactionRunner {
 export const REFRESH_DELAYS_MS = [0, 2_000, 5_000, 12_000, 30_000] as const
 
 export function useRefreshAfterTransaction(companyId: string): () => void {
+  const prefixes = useMemo(() => [['company', companyId]], [companyId])
+  return useRefreshQueries(prefixes)
+}
+
+/**
+ * The same schedule for any reads, by key prefix — the cabinet and the market. The
+ * array must be stable (a constant or memoised): it is what the callback depends on.
+ */
+export function useRefreshQueries(prefixes: readonly QueryKey[]): () => void {
   const queryClient = useQueryClient()
   return useCallback(() => {
     for (const delay of REFRESH_DELAYS_MS) {
-      setTimeout(
-        () => void queryClient.invalidateQueries({ queryKey: ['company', companyId] }),
-        delay,
-      )
+      setTimeout(() => {
+        for (const queryKey of prefixes) void queryClient.invalidateQueries({ queryKey })
+      }, delay)
     }
-  }, [queryClient, companyId])
+  }, [queryClient, prefixes])
 }

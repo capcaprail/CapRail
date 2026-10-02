@@ -67,7 +67,9 @@ export {
   BPS_DENOMINATOR,
   buildInitPlatform,
   FEE_BPS_MAX,
+  fetchPlatform,
   type InitPlatformArgs,
+  type PlatformState,
   platformFee,
 } from './tx/platform.ts'
 export {
