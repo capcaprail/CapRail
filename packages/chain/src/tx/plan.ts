@@ -22,6 +22,9 @@ export const TX_STEPS = [
   'set-investor-status',
   'distribute',
   'transfer',
+  'create-offer',
+  'cancel-offer',
+  'accept-offer',
 ] as const
 
 export type TxStep = (typeof TX_STEPS)[number]

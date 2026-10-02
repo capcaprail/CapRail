@@ -8,6 +8,7 @@ export {
   grantPda,
   investorRecordPda,
   mintPda,
+  offerPda,
   platformPda,
   SEED,
   TOKEN_2022_PROGRAM_ID,
@@ -38,6 +39,21 @@ export {
   jurisdictionBytes,
   type SetInvestorStatusArgs,
 } from './tx/investors.ts'
+export {
+  ACCEPT_OFFER_COMPUTE_UNITS,
+  type AcceptOfferArgs,
+  type AcceptOfferPlan,
+  buildAcceptOffer,
+  buildCancelOffer,
+  buildCreateOffer,
+  type CancelOfferArgs,
+  type CreateOfferArgs,
+  type OfferQuoteAmounts,
+  type OfferTerms,
+  type PlatformTerms,
+  quoteOffer,
+  validateOfferTerms,
+} from './tx/offers.ts'
 export {
   compileTransaction,
   MAX_TRANSACTION_BYTES,

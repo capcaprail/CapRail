@@ -21,6 +21,7 @@ export const SEED = {
   investor: utf8.encode('investor'),
   grant: utf8.encode('grant'),
   permit: utf8.encode('permit'),
+  offer: utf8.encode('offer'),
 } as const
 
 export { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID }
@@ -89,6 +90,14 @@ export function grantPda(mint: PublicKey, wallet: PublicKey): PublicKey {
  */
 export function transferPermitPda(source: PublicKey): PublicKey {
   return derive([SEED.permit, source.toBytes()], PROGRAM_ID)
+}
+
+/**
+ * A sale offer. `offerId` is chosen by the seller, so the address is known before the
+ * offer exists — and a cancelled offer keeps its account, so a reused id is refused.
+ */
+export function offerPda(mint: PublicKey, seller: PublicKey, offerId: bigint): PublicKey {
+  return derive([SEED.offer, mint.toBytes(), seller.toBytes(), u64Le(offerId)], PROGRAM_ID)
 }
 
 /** The hook's `ExtraAccountMetaList` — a PDA of the hook program, not of `caprail`. */

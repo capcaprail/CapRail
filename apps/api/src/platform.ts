@@ -1,4 +1,4 @@
-import { type CaprailProgram, platformFee, platformPda } from '@caprail/chain'
+import { type CaprailProgram, platformPda, quoteOffer } from '@caprail/chain'
 import type { OfferQuote, OfferRecord, OfferView, PlatformView } from '@caprail/shared'
 
 // The platform's configuration as the routes need it: null until `init_platform` has
@@ -39,7 +39,8 @@ export function chainPlatform(program: CaprailProgram): PlatformSource {
   })
 }
 
-// The price of the whole `remaining` with the program's fee formula. No quote for a
+// The price of the whole `remaining` — the same `quoteOffer` the buyer's transaction is
+// built with. No quote for a
 // closed offer, without a platform, or for an offer priced in another mint than the
 // platform's — that would be an index of another deployment, and a fee computed from
 // the wrong config is worse than none.
@@ -47,14 +48,12 @@ export function quoteOf(offer: OfferRecord, platform: PlatformView | null): Offe
   if (platform === null || offer.status !== 'open' || offer.paymentMint !== platform.paymentMint) {
     return null
   }
-  const amount = BigInt(offer.remaining)
-  const payment = amount * BigInt(offer.pricePerUnit)
-  const fee = platformFee(platform.feeBps, payment)
+  const quote = quoteOffer(platform.feeBps, BigInt(offer.pricePerUnit), BigInt(offer.remaining))
   return {
-    amount: amount.toString(),
-    payment: payment.toString(),
-    fee: fee.toString(),
-    sellerReceives: (payment - fee).toString(),
+    amount: quote.amount.toString(),
+    payment: quote.payment.toString(),
+    fee: quote.fee.toString(),
+    sellerReceives: quote.sellerReceives.toString(),
   }
 }
 

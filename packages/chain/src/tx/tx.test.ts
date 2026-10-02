@@ -1,19 +1,13 @@
-import { BN, BorshInstructionCoder } from '@anchor-lang/core'
 import { TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
-import {
-  type AccountInfo,
-  Connection,
-  PublicKey,
-  SystemProgram,
-  type TransactionInstruction,
-} from '@solana/web3.js'
+import { type AccountInfo, type Connection, PublicKey, SystemProgram } from '@solana/web3.js'
 import { describe, expect, it } from 'vitest'
 import { ata, extraAccountMetaListPda, platformPda, tokenConfigPda } from '../pda.ts'
-import { createCaprailProgram, HOOK_PROGRAM_ID, PROGRAM_ID } from '../program.ts'
+import { HOOK_PROGRAM_ID, PROGRAM_ID } from '../program.ts'
 import { loadHookFixture } from '../test/hook-fixture.ts'
+import { decode, expectAccountsAsDeclared, keyAt, only, program } from '../test/instructions.ts'
 import { buildCreateCompany, buildSetRoles } from './company.ts'
 import { buildSetInvestorStatus, jurisdictionBytes } from './investors.ts'
-import { compileTransaction, MAX_TRANSACTION_BYTES, type TxPlan, transactionBytes } from './plan.ts'
+import { compileTransaction, MAX_TRANSACTION_BYTES, transactionBytes } from './plan.ts'
 import { buildInitPlatform, FEE_BPS_MAX, platformFee } from './platform.ts'
 import {
   buildCreateToken,
@@ -25,10 +19,8 @@ import {
 } from './token.ts'
 import { buildDistribute, buildTransfer, expectedTransferTail, hookAccounts } from './transfer.ts'
 
-// No builder here talks to the node: `Program` needs a provider only to send, which this
-// package never does. The one path that reads accounts (`buildTransfer`) gets a fake
-// connection serving the fixture.
-const program = createCaprailProgram(new Connection('http://127.0.0.1:8899'))
+// The one path that reads accounts (`buildTransfer`) gets a fake connection serving
+// the fixture.
 const fixture = loadHookFixture()
 
 const ADMIN = new PublicKey('SysvarC1ock11111111111111111111111111111111')
@@ -36,59 +28,6 @@ const OFFICER = new PublicKey('SysvarRent111111111111111111111111111111111')
 const BLOCKHASH = '11111111111111111111111111111111'
 
 const POLICY = { requireAccreditation: true, requireRofr: false, rofrWindowSecs: 0 }
-
-function only(plan: TxPlan): TransactionInstruction {
-  const [instruction, ...rest] = plan.instructions
-  if (instruction === undefined || rest.length > 0) {
-    throw new Error(`${plan.step}: expected exactly one instruction`)
-  }
-  return instruction
-}
-
-/**
- * Round trip through the coder. The Anchor coder writes 0 for a field that is missing
- * from the object it is given — the bytes are valid, the meaning is not — so every
- * builder is decoded back and compared field by field.
- */
-function decode(instruction: TransactionInstruction): { name: string; data: unknown } {
-  const decoded = new BorshInstructionCoder(program.idl).decode(instruction.data)
-  if (decoded === null) throw new Error('instruction data does not decode')
-  return { name: decoded.name, data: plain(decoded.data) }
-}
-
-// Decoded values in a comparable form: `BN` and `PublicKey` compare by content, not by
-// their internal word arrays (a decoded BN carries trailing zero words).
-function plain(value: unknown): unknown {
-  // `bn.js` ships no types here, so `instanceof BN` does not narrow; `String()` takes unknown.
-  if (value instanceof BN) return String(value)
-  if (value instanceof PublicKey) return value.toBase58()
-  if (Array.isArray(value)) return value.map(plain)
-  if (typeof value === 'object' && value !== null) {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, plain(v)]),
-    )
-  }
-  return value
-}
-
-/** The instruction's accounts against the IDL: same count, same signer/writable flags. */
-function expectAccountsAsDeclared(instruction: TransactionInstruction, name: string) {
-  const declared = program.idl.instructions.find((i) => i.name === name)?.accounts
-  if (declared === undefined) throw new Error(`${name}: not in the IDL`)
-  expect(instruction.programId.equals(PROGRAM_ID)).toBe(true)
-  expect(instruction.keys.map((k) => [k.isSigner, k.isWritable])).toEqual(
-    declared.map((a) => [
-      Boolean('signer' in a && a.signer),
-      Boolean('writable' in a && a.writable),
-    ]),
-  )
-}
-
-const keyAt = (instruction: TransactionInstruction, index: number): PublicKey => {
-  const meta = instruction.keys[index]
-  if (meta === undefined) throw new Error(`no account at ${index}`)
-  return meta.pubkey
-}
 
 describe('initPlatform', () => {
   const PAYMENT_MINT = new PublicKey('SysvarS1otHashes111111111111111111111111111')
