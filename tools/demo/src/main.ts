@@ -1,5 +1,5 @@
-// The demo CLI: the US1 story with the M1 measurements (T025), and the platform's
-// one-time setup (T035).
+// The demo CLI: the US1 story with the M1 measurements (T025), the platform's
+// one-time setup (T035), and the US2 market story (T042).
 //
 // Run against a local validator with both programs in genesis
 // (`scripts/wsl-localnet.sh start`, from PowerShell through `wsl.exe`):
@@ -13,6 +13,11 @@
 //   pnpm demo:init-platform -- --rpc devnet --authority … --fee-bps 100 --mint-to <wallet>
 //   pnpm demo:init-platform -- --rpc devnet --authority … --payment-mint <existing stablecoin>
 // See `scenarios/init-platform.ts` for its options; `--rpc` is the one they share.
+//
+// The market story runs the US1 story first, then trades on the configured platform;
+// `--authority` is the platform key that issued the demo stablecoin (it pays the buyers):
+//   pnpm demo:us2 -- --authority <keypair.json>
+//   pnpm demo:us2 -- --authority … --dump fixtures/market   # + the market fixtures (T039)
 //
 // Options of the US1 run:
 //   --rpc <url>       node, default http://127.0.0.1:8899; `devnet` takes
@@ -28,9 +33,10 @@
 // The exit code is the verdict: 0 when every criterion holds, 1 otherwise — so a
 // devnet run (T032) can be gated the same way as the tests.
 import { resolve } from 'node:path'
+import { ACCEPT_OFFER_COMPUTE_UNITS } from '@caprail/chain'
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
 import { createContext, type DemoContext, loadKeypair, solOf } from './context.ts'
-import { toFixture, writeFixture } from './dump.ts'
+import { type Fixture, toFixture, writeFixture } from './dump.ts'
 import {
   KINDS,
   type Measurements,
@@ -51,6 +57,7 @@ import {
 } from './measure-panel.ts'
 import { parseInitPlatformArgs, runInitPlatform } from './scenarios/init-platform.ts'
 import { fundKeys, refundKeys, runUs1, tokenBalance, type Us1Result } from './scenarios/us1.ts'
+import { runUs2, type Trade, tradeMatchesQuote, type Us2Result } from './scenarios/us2.ts'
 
 type Options = {
   readonly rpc: string
@@ -219,6 +226,20 @@ function report(us1: Us1Result, m: Measurements, panel: Panel | undefined): bool
   return checks.every(([, ok]) => ok)
 }
 
+/** One fixture per transaction kind of the US1 story. */
+function us1Fixtures(us1: Us1Result, network: string): Fixture[] {
+  const t = us1.transactions
+  return [
+    toFixture('create-company', network, t.createCompany),
+    toFixture('create-token', network, t.createToken),
+    toFixture('set-policy', network, t.setPolicy),
+    toFixture('set-investor-status', network, t.setInvestorStatus),
+    toFixture('distribute', network, t.distribute),
+    toFixture('transfer-allowed', network, t.transferAllowed),
+    toFixture('transfer-refused-not-accredited', network, t.transferRefused),
+  ]
+}
+
 /** The story and the measurements; the verdict is the return value. */
 async function run(ctx: DemoContext, options: Options, network: string): Promise<boolean> {
   log('── US1 story ──')
@@ -332,16 +353,7 @@ async function run(ctx: DemoContext, options: Options, network: string): Promise
   const ok = report(us1, measurements, panel)
 
   if (options.dump !== undefined) {
-    const t = us1.transactions
-    const fixtures = [
-      toFixture('create-company', network, t.createCompany),
-      toFixture('create-token', network, t.createToken),
-      toFixture('set-policy', network, t.setPolicy),
-      toFixture('set-investor-status', network, t.setInvestorStatus),
-      toFixture('distribute', network, t.distribute),
-      toFixture('transfer-allowed', network, t.transferAllowed),
-      toFixture('transfer-refused-not-accredited', network, t.transferRefused),
-    ]
+    const fixtures = us1Fixtures(us1, network)
     const expired = admission.byKind.expired.sample
     if (expired !== undefined)
       fixtures.push(toFixture('transfer-refused-expired', network, expired))
@@ -397,6 +409,90 @@ async function us1(argv: readonly string[]): Promise<void> {
   }
 }
 
+function reportUs2(us2: Us2Result): boolean {
+  const cu = [us2.partial.computeUnits, us2.filled.computeUnits]
+  const heaviest = Math.max(...cu.map((c) => c ?? Number.POSITIVE_INFINITY))
+  const checks: readonly [string, boolean][] = [
+    ['FR-013', tradeMatchesQuote(us2.partial) && tradeMatchesQuote(us2.filled)],
+    ['FR-012', us2.refusal.reason === 'NotAccredited' && us2.refusal.unchanged],
+    ['FR-011', us2.cancel.delegationCleared && us2.filled.event.remaining === 0n],
+    ['CU', heaviest <= ACCEPT_OFFER_COMPUTE_UNITS],
+  ]
+  const mark = (name: string): string => (checks.find(([n]) => n === name)?.[1] ? 'OK  ' : 'FAIL')
+  const line = (label: string, t: Trade): string =>
+    `${label}: quoted ${t.quote.amount} for ${t.quote.payment}, fee ${t.quote.fee}, seller ${t.quote.sellerReceives}; ` +
+    `event payment ${t.event.payment}, fee ${t.event.fee}; balances buyer ${t.deltas.buyerPayment}, ` +
+    `seller ${t.deltas.sellerPayment}, fee account ${t.deltas.feeTreasury}, shares ${t.deltas.sellerShares}/+${t.deltas.buyerShares}`
+
+  log('')
+  log('── M2 checks ──')
+  log(`${mark('FR-013')} FR-013 the fee the panel's builder quoted is the fee the chain took:`)
+  log(`       ${line('partial', us2.partial)}`)
+  log(`       ${line('filled ', us2.filled)}`)
+  log(
+    `${mark('FR-012')} FR-012 a buyer revoked after the offer is refused before any balance moves: ` +
+      `${us2.refusal.reason ?? 'no reason'}, unchanged ${us2.refusal.unchanged}`,
+  )
+  log(
+    `${mark('FR-011')} FR-011 partial then cancel leaves ${us2.cancel.remaining} unsold with the delegation cleared ` +
+      `(${us2.cancel.delegationCleared}); a whole take fills the offer (remaining ${us2.filled.event.remaining})`,
+  )
+  log(
+    `${mark('CU')} accept_offer: ${cu.map((c) => c ?? '?').join(' / ')} CU, limit ${ACCEPT_OFFER_COMPUTE_UNITS}`,
+  )
+  return checks.every(([, ok]) => ok)
+}
+
+async function us2(argv: readonly string[]): Promise<void> {
+  const options = parseArgs(argv)
+  const authority = flagValue(argv, '--authority')
+  if (authority === undefined) {
+    throw new Error(
+      'us2 needs --authority <keypair.json> — the platform key that issued the stablecoin',
+    )
+  }
+  const ctx = await connect(options.rpc)
+  const payer = options.payer === undefined ? undefined : loadKeypair(options.payer)
+  const network = ctx.local ? 'localnet' : describeUrl(options.rpc)
+  log(`node ${network}`)
+  log('funding disposable keys…')
+  await fundKeys(ctx, payer, log)
+
+  try {
+    log('── US1 story ──')
+    const us1Result = await runUs1(ctx, log)
+    log('── US2 story ──')
+    const result = await runUs2(ctx, us1Result, authority, payer, log)
+    process.exitCode = reportUs2(result) ? 0 : 1
+    log('')
+    log(`company id ${us1Result.companyId} · mint ${us1Result.token.mint.toBase58()}`)
+
+    // The whole ledger of the run, US1 part included: the market fixtures name a mint
+    // and offers that only this run's own `create-token` and `create-offer` explain,
+    // so they go to a directory of their own rather than next to another run's story.
+    if (options.dump !== undefined) {
+      const t = result.transactions
+      for (const fixture of [
+        ...us1Fixtures(us1Result, network),
+        toFixture('create-offer', network, t.createOffer),
+        toFixture('accept-offer-partial', network, t.acceptPartial),
+        toFixture('set-investor-status-revoked', network, t.revokeBuyer),
+        toFixture('accept-offer-refused-not-accredited', network, t.acceptRefused),
+        toFixture('cancel-offer', network, t.cancelOffer),
+        toFixture('create-offer-second', network, t.createSecond),
+        toFixture('accept-offer-filled', network, t.acceptFilled),
+      ]) {
+        log(`fixture ${writeFixture(options.dump, fixture)}`)
+      }
+    }
+  } finally {
+    if (payer !== undefined) {
+      const refunded = await refundKeys(ctx, payer, log, [ctx.keys.revoked])
+      log(`refunded ${solOf(refunded)} SOL to ${payer.publicKey.toBase58()}`)
+    }
+  }
+}
+
 // The first argument names the command; without one it is the US1 run, as it was
 // before there was more than one.
 async function main(): Promise<void> {
@@ -410,8 +506,10 @@ async function main(): Promise<void> {
       return await initPlatform(rest)
     case 'us1':
       return await us1(rest)
+    case 'us2':
+      return await us2(rest)
     default:
-      throw new Error(`unknown command ${command} — expected us1 or init-platform`)
+      throw new Error(`unknown command ${command} — expected us1, us2 or init-platform`)
   }
 }
 

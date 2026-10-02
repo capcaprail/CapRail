@@ -848,3 +848,59 @@ describe('createApplier on the market', () => {
     expect(m.trades).toHaveLength(0)
   })
 })
+
+// The market run as the ledger wrote it (`pnpm demo:us2 -- --dump fixtures/market`):
+// its own US1 part, then an offer, a partial trade, a buyer revoked and refused, the
+// cancellation, and a second offer filled whole.
+const MARKET_DIR = join(import.meta.dirname, '..', '..', '..', 'fixtures', 'market')
+const marketRun = readdirSync(MARKET_DIR)
+  .filter((name) => name.endsWith('.json'))
+  .map((name) => JSON.parse(readFileSync(join(MARKET_DIR, name), 'utf8')) as Fixture)
+  .sort((a, b) => a.slot - b.slot)
+
+describe('createApplier on the market run from the ledger', () => {
+  async function replayMarket() {
+    const index = memoryIndex()
+    const scripted = scriptedRpc({})
+    const { log, warnings } = capturedLog()
+    const apply = createApplier({ store: index.store, rpc: scripted.rpc, log, now: () => NOW })
+    for (const tx of marketRun) await apply(structuredClone(tx))
+    return { ...index, calls: scripted.calls, warnings }
+  }
+  const byKind = (kind: string): Fixture => {
+    const found = marketRun.find((f) => f.kind === kind)
+    if (found === undefined) throw new Error(`no fixture ${kind}`)
+    return found
+  }
+
+  it('ends with one offer cancelled at 450 and one filled, and both trades with their fees', async () => {
+    const m = await replayMarket()
+    const offers = [...m.offers.values()].sort((a, b) => Number(b.amount - a.amount))
+    expect(offers.map((o) => [o.status, o.amount, o.remaining])).toEqual([
+      ['cancelled', 600n, 450n],
+      ['filled', 10n, 0n],
+    ])
+    expect(m.trades.map((t) => [t.amount, t.payment, t.fee])).toEqual([
+      [150n, 187_500_000n, 1_875_000n],
+      [10n, 20_000_000n, 200_000n],
+    ])
+    expect(m.warnings).toEqual([])
+  })
+
+  it('journals the refused accept against the seller, not the offer PDA that signed', async () => {
+    const m = await replayMarket()
+    const refused = m.attempts.find(
+      (a) => a.txSignature === byKind('accept-offer-refused-not-accredited').signature,
+    )
+    const [cancelled] = [...m.offers.values()].filter((o) => o.status === 'cancelled')
+    expect(refused).toMatchObject({ outcome: 'rejected', reasonCode: 'NotAccredited', amount: 50n })
+    expect(refused?.sourceOwner).toBe(cancelled?.seller)
+    expect(refused?.sourceOwner).not.toBe(cancelled?.offer)
+    // Both parties are wallets the index ties to the mint — the seller by its holding,
+    // the buyer by its revoked record — so their accounts are derived, not fetched.
+    const revoked = [...m.investors.values()].find((row) => row.status === 'revoked')
+    expect(refused?.destOwner).toBe(revoked?.wallet)
+    // The one chain lookup is the US1 stranger, who is in no registry.
+    expect(m.calls.owner).toEqual([transferAccounts(byKind('transfer-refused-not-accredited'))[2]])
+  })
+})

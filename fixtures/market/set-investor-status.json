@@ -1,0 +1,51 @@
+{
+  "kind": "set-investor-status",
+  "network": "localnet",
+  "fee": 5000,
+  "computeUnitsConsumed": 11780,
+  "signature": "2gpDRvcKxE3uQxCocw3YY7SMQni4mJxoWnZ6TNkNqcoGZ7T3d46Th36D5QvYZVQQfqp6q6a9hWmh5NidKjNLAHRU",
+  "slot": 2423,
+  "blockTime": 1790945115,
+  "logs": [
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g invoke [1]",
+    "Program log: Instruction: SetInvestorStatus",
+    "Program 11111111111111111111111111111111 invoke [2]",
+    "Program 11111111111111111111111111111111 success",
+    "Program data: 9TGJ6KORfyNAyYwMaiBQHtDLluFDfKkNjDJVeSgn+nmKe+2x15khPrjfyx3ym+JpHlegmXl57PGjBmsSVU8pBUtCv1A2eu+yBoVswFti/ElIRzQbjpC1BKlXvIUS3zRfmJx2oGqht94B29qgbAAAAABVQQFbp79qAAAAAC13trpmXiBh7saijzeGl2sgVm9fEdptdjv7/U+yH7f6",
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g consumed 11780 of 200000 compute units",
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g success"
+  ],
+  "failed": false,
+  "err": null,
+  "accountKeys": [
+    "44VDsPR8yAGUAsureCwjYdhp3xtoBfy6ztYuve1arxDF",
+    "86kErrnWt2JS4YaeFmTLcBW3HGGUuWN3CDh9ky8yTs6q",
+    "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+    "5MuLqAE7zU93rrhccBo7jbQjNbkp1ezh15vbAZpizWX7",
+    "C2zBJ76ZGMWLVu9P3YzR9tjiTW9jGPgiYcxMLpZUbpUV",
+    "11111111111111111111111111111111"
+  ],
+  "instructions": [
+    {
+      "programId": "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+      "accounts": [
+        "44VDsPR8yAGUAsureCwjYdhp3xtoBfy6ztYuve1arxDF",
+        "5MuLqAE7zU93rrhccBo7jbQjNbkp1ezh15vbAZpizWX7",
+        "C2zBJ76ZGMWLVu9P3YzR9tjiTW9jGPgiYcxMLpZUbpUV",
+        "86kErrnWt2JS4YaeFmTLcBW3HGGUuWN3CDh9ky8yTs6q",
+        "11111111111111111111111111111111"
+      ],
+      "data": "v7cOMCpVLnsGhWzAW2L8SUhHNBuOkLUEqVe8hRLfNF+YnHagaqG33gHb2qBsAAAAAFVBAQ==",
+      "outer": 0
+    },
+    {
+      "programId": "11111111111111111111111111111111",
+      "accounts": [
+        "44VDsPR8yAGUAsureCwjYdhp3xtoBfy6ztYuve1arxDF",
+        "86kErrnWt2JS4YaeFmTLcBW3HGGUuWN3CDh9ky8yTs6q"
+      ],
+      "data": "AAAAAHDeGgAAAAAAfQAAAAAAAACSkFpwDPUIAUq2hudqmLoZl5q4fPcbjB/xpskkBqBN8w==",
+      "outer": 0
+    }
+  ]
+}

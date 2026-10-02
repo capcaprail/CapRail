@@ -136,7 +136,7 @@ export function createApplier(deps: ApplierDeps): TransactionHandler {
   // registered investor refused for an expired admission, say), then the chain.
   // null: the account does not exist — a transfer to a missing account fails
   // before the hook runs, so a refusal never lands here, but the column is nullable.
-  async function destinationOwner(
+  async function accountOwner(
     index: IndexWriter,
     mint: string,
     account: string,
@@ -546,8 +546,11 @@ export function createApplier(deps: ApplierDeps): TransactionHandler {
     await index.recordAttempt({
       mint: transfer.mint,
       companyId: token.companyId,
-      sourceOwner: transfer.sourceOwner,
-      destOwner: await destinationOwner(index, transfer.mint, transfer.destination),
+      // The party is the owner of the account the shares leave, not whoever signed:
+      // in `accept_offer` the signer is the offer's PDA, a delegate of the seller.
+      sourceOwner:
+        (await accountOwner(index, transfer.mint, transfer.source)) ?? transfer.authority,
+      destOwner: await accountOwner(index, transfer.mint, transfer.destination),
       amount: transfer.amount,
       outcome: 'rejected',
       reasonCode: rejection.reason,

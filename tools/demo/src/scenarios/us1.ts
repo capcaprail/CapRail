@@ -104,12 +104,17 @@ export async function fundKeys(
  * SOL on them would be the most expensive line of the demo. Rent locked in
  * token accounts stays where it is — that is the cost of the run.
  */
-export async function refundKeys(ctx: DemoContext, payer: Keypair, log: Log): Promise<number> {
+export async function refundKeys(
+  ctx: DemoContext,
+  payer: Keypair,
+  log: Log,
+  extra: readonly Keypair[] = [],
+): Promise<number> {
   const { connection } = ctx
   // One signature per refund; the network's base fee.
   const fee = 5000
   let refunded = 0
-  for (const [key] of fundingPlan(ctx)) {
+  for (const key of [...fundingPlan(ctx).map(([k]) => k), ...extra]) {
     const lamports = await connection.getBalance(key.publicKey, 'confirmed')
     if (lamports <= fee) continue
     try {

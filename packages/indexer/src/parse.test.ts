@@ -107,7 +107,7 @@ describe('parseTransaction on the US1 fixtures', () => {
       const refused = parsed.rejection?.transfer
       expect(refused?.mint, kind).toBe(token.mint)
       expect(refused?.source, kind).toBe(transfer.source)
-      expect(refused?.sourceOwner, kind).toBe(transfer.sourceOwner)
+      expect(refused?.authority, kind).toBe(transfer.sourceOwner)
       expect(refused?.destination, kind).not.toBe(transfer.destination)
       expect(refused?.amount, kind).toBeGreaterThan(0n)
       expect(refused?.decimals, kind).toBe(token.decimals)

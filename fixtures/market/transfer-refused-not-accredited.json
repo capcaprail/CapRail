@@ -1,0 +1,80 @@
+{
+  "kind": "transfer-refused-not-accredited",
+  "network": "localnet",
+  "fee": 5000,
+  "computeUnitsConsumed": 51302,
+  "signature": "36FFJ7YXTq4xwZZtXnx1xJqurxSCA3wZF2tFH6yEDNwXPcPJh5Kv36rh1GdMYAdaMWCnVhYQ3EkRQ28XyBGDYtnp",
+  "slot": 2429,
+  "blockTime": 1790945118,
+  "logs": [
+    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb invoke [1]",
+    "Program log: Instruction: TransferChecked",
+    "Program 6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi invoke [2]",
+    "Program log: Instruction: Execute",
+    "Program log: AnchorError occurred. Error Code: NotAccredited. Error Number: 6000. Error Message: recipient is not an accredited investor of this company.",
+    "Program 6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi consumed 6089 of 154787 compute units",
+    "Program 6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi failed: custom program error: 0x1770",
+    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb consumed 51302 of 200000 compute units",
+    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb failed: custom program error: 0x1770"
+  ],
+  "failed": true,
+  "err": {
+    "InstructionError": [
+      0,
+      {
+        "Custom": 6000
+      }
+    ]
+  },
+  "accountKeys": [
+    "STSyHLBw38LbFDnvtY7PxGKZc5PxTtpU8wBXRe7ALi1",
+    "BpvwpGPdUrrryjmNgr7AiW12RGH22DaeQm9CrLfhMcT9",
+    "CSRUPEvAFBWZkymC8xqe3CBtpPTWt2uWU5tESzG9kQ6B",
+    "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "DSfwYbqiSVFXbUwrsZLvKUZrNAwUhj7jbrYVSVNC9W1F",
+    "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+    "C2zBJ76ZGMWLVu9P3YzR9tjiTW9jGPgiYcxMLpZUbpUV",
+    "FmoxQwbYBDpDHhMLjBCe4VpeamrHgLcZiqzsbkR6bA81",
+    "Byyrcqqih4sjX6CH2zL5A4vXX78ttnJLpb91thVXGMDC",
+    "4feiLT2JNyKnV8UQYgTRofZcvRRL9bVkhSYt9jg56vFh",
+    "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi",
+    "2vz7d3yjrdvLTrzbY6DS5RQu9bKh6k51MDeu6JXUA4Wt"
+  ],
+  "instructions": [
+    {
+      "programId": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "accounts": [
+        "BpvwpGPdUrrryjmNgr7AiW12RGH22DaeQm9CrLfhMcT9",
+        "DSfwYbqiSVFXbUwrsZLvKUZrNAwUhj7jbrYVSVNC9W1F",
+        "CSRUPEvAFBWZkymC8xqe3CBtpPTWt2uWU5tESzG9kQ6B",
+        "STSyHLBw38LbFDnvtY7PxGKZc5PxTtpU8wBXRe7ALi1",
+        "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+        "C2zBJ76ZGMWLVu9P3YzR9tjiTW9jGPgiYcxMLpZUbpUV",
+        "FmoxQwbYBDpDHhMLjBCe4VpeamrHgLcZiqzsbkR6bA81",
+        "Byyrcqqih4sjX6CH2zL5A4vXX78ttnJLpb91thVXGMDC",
+        "4feiLT2JNyKnV8UQYgTRofZcvRRL9bVkhSYt9jg56vFh",
+        "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi",
+        "2vz7d3yjrdvLTrzbY6DS5RQu9bKh6k51MDeu6JXUA4Wt"
+      ],
+      "data": "DAoAAAAAAAAAAA==",
+      "outer": 0
+    },
+    {
+      "programId": "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi",
+      "accounts": [
+        "BpvwpGPdUrrryjmNgr7AiW12RGH22DaeQm9CrLfhMcT9",
+        "DSfwYbqiSVFXbUwrsZLvKUZrNAwUhj7jbrYVSVNC9W1F",
+        "CSRUPEvAFBWZkymC8xqe3CBtpPTWt2uWU5tESzG9kQ6B",
+        "STSyHLBw38LbFDnvtY7PxGKZc5PxTtpU8wBXRe7ALi1",
+        "2vz7d3yjrdvLTrzbY6DS5RQu9bKh6k51MDeu6JXUA4Wt",
+        "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+        "C2zBJ76ZGMWLVu9P3YzR9tjiTW9jGPgiYcxMLpZUbpUV",
+        "FmoxQwbYBDpDHhMLjBCe4VpeamrHgLcZiqzsbkR6bA81",
+        "Byyrcqqih4sjX6CH2zL5A4vXX78ttnJLpb91thVXGMDC",
+        "4feiLT2JNyKnV8UQYgTRofZcvRRL9bVkhSYt9jg56vFh"
+      ],
+      "data": "aSVlxUv7ZhoKAAAAAAAAAA==",
+      "outer": 0
+    }
+  ]
+}

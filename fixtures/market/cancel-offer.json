@@ -1,0 +1,53 @@
+{
+  "kind": "cancel-offer",
+  "network": "localnet",
+  "fee": 5000,
+  "computeUnitsConsumed": 9498,
+  "signature": "3Tq4pxRxSQfosqLAxdq9QqWNhqHsC8kky3NjrpDrm8fgdANUtAzkcvapS1HRpNr58etYz4e14ErmkG8MTWipFT2n",
+  "slot": 2438,
+  "blockTime": 1790945122,
+  "logs": [
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g invoke [1]",
+    "Program log: Instruction: CancelOffer",
+    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb invoke [2]",
+    "Program log: Instruction: Revoke",
+    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb consumed 797 of 192748 compute units",
+    "Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb success",
+    "Program data: LSqv1jPAmgmrEd6ndkWICXG+EE7I1v3hK6zzjgrR60pCnTLfy74Jvrjfyx3ym+JpHlegmXl57PGjBmsSVU8pBUtCv1A2eu+yBoVswFti/ElIRzQbjpC1BKlXvIUS3zRfmJx2oGqht949CMxPBiVoYcIBAAAAAAAAAWKnv2oAAAAA",
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g consumed 9498 of 200000 compute units",
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g success"
+  ],
+  "failed": false,
+  "err": null,
+  "accountKeys": [
+    "STSyHLBw38LbFDnvtY7PxGKZc5PxTtpU8wBXRe7ALi1",
+    "CWnXBeu46o5UPsH6BqpeVgqgdXhuSLREy7915wzeHRLZ",
+    "BpvwpGPdUrrryjmNgr7AiW12RGH22DaeQm9CrLfhMcT9",
+    "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+    "DSfwYbqiSVFXbUwrsZLvKUZrNAwUhj7jbrYVSVNC9W1F",
+    "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+  ],
+  "instructions": [
+    {
+      "programId": "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+      "accounts": [
+        "STSyHLBw38LbFDnvtY7PxGKZc5PxTtpU8wBXRe7ALi1",
+        "CWnXBeu46o5UPsH6BqpeVgqgdXhuSLREy7915wzeHRLZ",
+        "DSfwYbqiSVFXbUwrsZLvKUZrNAwUhj7jbrYVSVNC9W1F",
+        "BpvwpGPdUrrryjmNgr7AiW12RGH22DaeQm9CrLfhMcT9",
+        "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+      ],
+      "data": "XMvfKFxZNXc=",
+      "outer": 0
+    },
+    {
+      "programId": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "accounts": [
+        "BpvwpGPdUrrryjmNgr7AiW12RGH22DaeQm9CrLfhMcT9",
+        "STSyHLBw38LbFDnvtY7PxGKZc5PxTtpU8wBXRe7ALi1"
+      ],
+      "data": "BQ==",
+      "outer": 0
+    }
+  ]
+}

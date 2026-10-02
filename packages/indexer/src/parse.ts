@@ -20,15 +20,17 @@ const TOKEN_2022 = TOKEN_2022_PROGRAM_ID.toBase58()
 // `transfer_attempts`.
 export type IndexedEvent = IndexEvent & { eventIndex: number }
 
-// The `transfer_checked` the hook refused: parties as the instruction names them.
-// `destination` is a token account; its owner is not in the instruction (the
-// worker resolves it). `sourceOwner` is the signing authority — a wallet, or the
-// `Company` PDA when the transfer was a `distribute`.
+// The `transfer_checked` the hook refused: accounts as the instruction names them.
+// `source` and `destination` are token accounts; their owners are not in the
+// instruction (the worker resolves them). `authority` is whoever signed — the owner
+// itself on a wallet transfer, the `Company` PDA (the treasury's owner) on a
+// `distribute`, but the `Offer` PDA on an `accept_offer`, where it is the seller's
+// delegate and not a party.
 export type TransferInstruction = {
   mint: string
   source: string
   destination: string
-  sourceOwner: string
+  authority: string
   amount: bigint
   decimals: number
 }
@@ -66,12 +68,12 @@ function transferChecked(ix: Instruction): TransferInstruction | null {
   if (ix.programId !== TOKEN_2022) return null
   const data = Buffer.from(ix.data, 'base64')
   if (data.length !== TRANSFER_CHECKED_DATA_LENGTH || data[0] !== TRANSFER_CHECKED_TAG) return null
-  const [source, mint, destination, sourceOwner] = ix.accounts
+  const [source, mint, destination, authority] = ix.accounts
   if (
     source === undefined ||
     mint === undefined ||
     destination === undefined ||
-    sourceOwner === undefined
+    authority === undefined
   ) {
     return null
   }
@@ -79,7 +81,7 @@ function transferChecked(ix: Instruction): TransferInstruction | null {
     mint,
     source,
     destination,
-    sourceOwner,
+    authority,
     amount: data.readBigUInt64LE(1),
     decimals: data.readUInt8(9),
   }

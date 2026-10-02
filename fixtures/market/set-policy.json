@@ -1,0 +1,36 @@
+{
+  "kind": "set-policy",
+  "network": "localnet",
+  "fee": 5000,
+  "computeUnitsConsumed": 3886,
+  "signature": "4zK1hxTy94JLw4dEYkyAiBJzQyssmRezGcY9Xx2FPpjPnvBjir88GU3VfXG6roK3BLdiCo4x4hSXhsvcig5hYKsD",
+  "slot": 2422,
+  "blockTime": 1790945115,
+  "logs": [
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g invoke [1]",
+    "Program log: Instruction: SetPolicy",
+    "Program data: fvZFMAnw4jRAyYwMaiBQHtDLluFDfKkNjDJVeSgn+nmKe+2x15khPrjfyx3ym+JpHlegmXl57PGjBmsSVU8pBUtCv1A2eu+yAQAAAAAAAgAAAFunv2oAAAAA",
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g consumed 3886 of 200000 compute units",
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g success"
+  ],
+  "failed": false,
+  "err": null,
+  "accountKeys": [
+    "ALACU9VwMVc4zfHwHunHN531S3dz5A18AhtLLTcGSNKM",
+    "C2zBJ76ZGMWLVu9P3YzR9tjiTW9jGPgiYcxMLpZUbpUV",
+    "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+    "5MuLqAE7zU93rrhccBo7jbQjNbkp1ezh15vbAZpizWX7"
+  ],
+  "instructions": [
+    {
+      "programId": "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+      "accounts": [
+        "ALACU9VwMVc4zfHwHunHN531S3dz5A18AhtLLTcGSNKM",
+        "5MuLqAE7zU93rrhccBo7jbQjNbkp1ezh15vbAZpizWX7",
+        "C2zBJ76ZGMWLVu9P3YzR9tjiTW9jGPgiYcxMLpZUbpUV"
+      ],
+      "data": "KIUMnevKAoQBAAAAAAA=",
+      "outer": 0
+    }
+  ]
+}

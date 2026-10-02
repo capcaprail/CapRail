@@ -1,0 +1,47 @@
+{
+  "kind": "create-company",
+  "network": "localnet",
+  "fee": 5000,
+  "computeUnitsConsumed": 7998,
+  "signature": "u6SS87jMpoUow6zJwKzy87ajvMmX7Lx39iPuoaxBiWAUYAdC9YXtt5gHQhFbamoFEPggvfaZ8cnaFGje4NYS37t",
+  "slot": 2420,
+  "blockTime": 1790945114,
+  "logs": [
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g invoke [1]",
+    "Program log: Instruction: CreateCompany",
+    "Program 11111111111111111111111111111111 invoke [2]",
+    "Program 11111111111111111111111111111111 success",
+    "Program data: t9CNUQZTcGNAyYwMaiBQHtDLluFDfKkNjDJVeSgn+nmKe+2x15khPsWW3lD66mRJiqGeG7UvPRSKgJxPUdXFioHGkIdVpBQ388egwY8fgdQtd7a6Zl4gYe7Goo83hpdrIFZvXxHabXY7+/1Psh+3+gkAAABEZW1vIENvcnA=",
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g consumed 7998 of 200000 compute units",
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g success"
+  ],
+  "failed": false,
+  "err": null,
+  "accountKeys": [
+    "ALACU9VwMVc4zfHwHunHN531S3dz5A18AhtLLTcGSNKM",
+    "5MuLqAE7zU93rrhccBo7jbQjNbkp1ezh15vbAZpizWX7",
+    "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+    "11111111111111111111111111111111"
+  ],
+  "instructions": [
+    {
+      "programId": "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+      "accounts": [
+        "ALACU9VwMVc4zfHwHunHN531S3dz5A18AhtLLTcGSNKM",
+        "5MuLqAE7zU93rrhccBo7jbQjNbkp1ezh15vbAZpizWX7",
+        "11111111111111111111111111111111"
+      ],
+      "data": "JMDZk+mBxhLFlt5Q+upkSS13trpmXiBh7saijzeGl2sgVm9fEdptdjv7/U+yH7f6CQAAAERlbW8gQ29ycA==",
+      "outer": 0
+    },
+    {
+      "programId": "11111111111111111111111111111111",
+      "accounts": [
+        "ALACU9VwMVc4zfHwHunHN531S3dz5A18AhtLLTcGSNKM",
+        "5MuLqAE7zU93rrhccBo7jbQjNbkp1ezh15vbAZpizWX7"
+      ],
+      "data": "AAAAAPAEGgAAAAAAdQAAAAAAAACSkFpwDPUIAUq2hudqmLoZl5q4fPcbjB/xpskkBqBN8w==",
+      "outer": 0
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "kind": "set-investor-status-revoked",
+  "network": "localnet",
+  "fee": 5000,
+  "computeUnitsConsumed": 9205,
+  "signature": "2LV3mjkkLtKzBpyN5rLPSuUKVth1cEoS89We5s39qBy5SxzSBVfSy4yNQuKxS7z2iBBLWnJjVWG12sRTbZgQar6F",
+  "slot": 2436,
+  "blockTime": 1790945121,
+  "logs": [
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g invoke [1]",
+    "Program log: Instruction: SetInvestorStatus",
+    "Program data: 9TGJ6KORfyNAyYwMaiBQHtDLluFDfKkNjDJVeSgn+nmKe+2x15khPrjfyx3ym+JpHlegmXl57PGjBmsSVU8pBUtCv1A2eu+y9XhgpE4gBjOd/XeiKn1goQwdjA6hMxpxRWICmrkrKYEC3tqgbAAAAABVQQFhp79qAAAAAC13trpmXiBh7saijzeGl2sgVm9fEdptdjv7/U+yH7f6",
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g consumed 9205 of 200000 compute units",
+    "Program As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g success"
+  ],
+  "failed": false,
+  "err": null,
+  "accountKeys": [
+    "44VDsPR8yAGUAsureCwjYdhp3xtoBfy6ztYuve1arxDF",
+    "HnkjLHBbgUMg1nq3tnxDmWGZNjHXwfHwKkG3zQGu8cBL",
+    "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+    "5MuLqAE7zU93rrhccBo7jbQjNbkp1ezh15vbAZpizWX7",
+    "C2zBJ76ZGMWLVu9P3YzR9tjiTW9jGPgiYcxMLpZUbpUV",
+    "11111111111111111111111111111111"
+  ],
+  "instructions": [
+    {
+      "programId": "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g",
+      "accounts": [
+        "44VDsPR8yAGUAsureCwjYdhp3xtoBfy6ztYuve1arxDF",
+        "5MuLqAE7zU93rrhccBo7jbQjNbkp1ezh15vbAZpizWX7",
+        "C2zBJ76ZGMWLVu9P3YzR9tjiTW9jGPgiYcxMLpZUbpUV",
+        "HnkjLHBbgUMg1nq3tnxDmWGZNjHXwfHwKkG3zQGu8cBL",
+        "11111111111111111111111111111111"
+      ],
+      "data": "v7cOMCpVLnv1eGCkTiAGM539d6IqfWChDB2MDqEzGnFFYgKauSspgQLe2qBsAAAAAFVBAQ==",
+      "outer": 0
+    }
+  ]
+}
