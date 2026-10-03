@@ -4,9 +4,13 @@ import {
   type AttemptReport,
   isRejectionReason,
   type JournalEntry,
+  type JournalTrade,
+  type PlatformView,
+  type TokenView,
   type WalletAddress,
 } from '@caprail/shared'
 import type { TxOutcome } from '../../chain/send.ts'
+import { formatPayment, pricePerShare } from '../../market/money.ts'
 
 // The journal's pure parts: what a refused simulation reports, and the tallies of
 // the loaded page.
@@ -43,6 +47,9 @@ export type JournalCounts = {
   refused: number
   refusedOnChain: number
   refusedInSimulation: number
+  // Settled transfers that were market trades, and the platform's fees on them.
+  trades: number
+  fees: bigint
 }
 
 export function journalCounts(entries: readonly JournalEntry[]): JournalCounts {
@@ -52,10 +59,16 @@ export function journalCounts(entries: readonly JournalEntry[]): JournalCounts {
     refused: 0,
     refusedOnChain: 0,
     refusedInSimulation: 0,
+    trades: 0,
+    fees: 0n,
   }
   for (const entry of entries) {
     if (entry.outcome === 'allowed') {
       counts.settled += 1
+      if (entry.trade !== null) {
+        counts.trades += 1
+        counts.fees += BigInt(entry.trade.fee)
+      }
       continue
     }
     counts.refused += 1
@@ -65,10 +78,41 @@ export function journalCounts(entries: readonly JournalEntry[]): JournalCounts {
   return counts
 }
 
-export type JournalFilter = 'all' | 'settled' | 'refused'
+export type JournalFilter = 'all' | 'settled' | 'trades' | 'refused'
 
 export const JOURNAL_FILTERS: ReadonlyArray<{ value: JournalFilter; label: string }> = [
   { value: 'all', label: 'All' },
   { value: 'settled', label: 'Settled' },
+  { value: 'trades', label: 'Trades' },
   { value: 'refused', label: 'Refused' },
 ]
+
+// The money side of a trade in the journal (FR-013): the price, what the buyer paid,
+// the platform's fee out of it and what reached the seller. Named in the payment
+// mint the platform labels; a trade in another mint (or a deployment the API could
+// not read the platform of) is shown in base units rather than in a guessed currency.
+export type TradeLine = {
+  price: string
+  paid: string
+  fee: string
+  sellerReceives: string
+}
+
+export function tradeLine(
+  trade: JournalTrade,
+  token: Pick<TokenView, 'decimals'> | undefined,
+  platform: PlatformView | null,
+): TradeLine {
+  const known = platform !== null && platform.paymentMint === trade.paymentMint
+  const money = (amount: bigint | string) =>
+    known ? formatPayment(amount, platform) : `${amount} base units`
+  return {
+    price:
+      token === undefined
+        ? `${money(trade.pricePerUnit)} per unit`
+        : `${money(pricePerShare(trade.pricePerUnit, token.decimals))} per share`,
+    paid: money(trade.payment),
+    fee: money(trade.fee),
+    sellerReceives: money(trade.sellerReceives),
+  }
+}

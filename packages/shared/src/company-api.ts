@@ -113,6 +113,20 @@ export type AttemptOutcome = (typeof ATTEMPT_OUTCOMES)[number]
 export const ATTEMPT_ORIGINS = ['chain', 'simulation'] as const
 export type AttemptOrigin = (typeof ATTEMPT_ORIGINS)[number]
 
+// The money side of a settled transfer that was a market trade (`OfferAccepted` of the
+// same transaction): what the buyer paid, the platform's fee out of it, and what reached
+// the seller (FR-013). The shares are the entry's own `amount`.
+export const journalTradeSchema = z.object({
+  offer: z.string().min(1),
+  offerId: u64StringSchema,
+  pricePerUnit: u64StringSchema,
+  paymentMint: z.string().min(1),
+  payment: u64StringSchema,
+  fee: u64StringSchema,
+  sellerReceives: u64StringSchema,
+})
+export type JournalTrade = z.infer<typeof journalTradeSchema>
+
 export const journalEntrySchema = z.object({
   id: z.string().regex(/^\d+$/),
   mint: z.string().min(1),
@@ -129,6 +143,8 @@ export const journalEntrySchema = z.object({
   slot: z.number().int().nullable(),
   blockTime: isoTimeSchema,
   logs: z.array(z.string()),
+  // null for every transfer that was not a trade, and for every refusal.
+  trade: journalTradeSchema.nullable(),
 })
 export type JournalEntry = z.infer<typeof journalEntrySchema>
 
@@ -172,17 +188,3 @@ export type AttemptReport = z.infer<typeof attemptReportSchema>
 
 export const attemptReportResponseSchema = z.object({ id: z.string().regex(/^\d+$/) })
 export type AttemptReportResponse = z.infer<typeof attemptReportResponseSchema>
-
-// SSE `/companies/:id/events`: one of these per message, the event name is `kind`.
-export const feedEventSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('attempt'), entry: journalEntrySchema }),
-  z.object({ kind: z.literal('status'), investor: investorViewSchema }),
-  z.object({
-    kind: z.literal('policy'),
-    mint: z.string().min(1),
-    policy: transferPolicySchema,
-    policyVersion: z.number().int().positive(),
-    setAt: isoTimeSchema.nullable(),
-  }),
-])
-export type FeedEvent = z.infer<typeof feedEventSchema>

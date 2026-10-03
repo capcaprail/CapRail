@@ -1,19 +1,21 @@
-import type { CompanyView, InvestorView, TokenView } from '@caprail/shared'
+import type { CompanyOffers, CompanyView, InvestorView, TokenView } from '@caprail/shared'
+import type { UseQueryResult } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { useSession } from '../auth/SessionProvider.tsx'
 import { rolesIn } from '../auth/session.ts'
 import { useRefreshAfterTransaction } from '../chain/hooks.ts'
 import { Cell, DoubleRule, EmptyRows, Help, Row, Table } from '../components/Ledger.tsx'
 import { short, utcDateTime } from '../format.ts'
-import { isCatchingUp, useCompany, useInvestors } from './api.ts'
+import { isCatchingUp, useCompany, useCompanyOffers, useInvestors } from './api.ts'
 import { CapTableSection } from './cap-table/CapTable.tsx'
 import { type FeedState, useCompanyFeed } from './feed.ts'
 import { fromBaseUnits } from './fields.ts'
 import { JournalSection } from './journal/Journal.tsx'
+import { OffersSection } from './offers/Offers.tsx'
 import { PolicySection } from './policy/PolicyForm.tsx'
 import { RegistrySection } from './registry/Registry.tsx'
 
-// The company panel on the index (FR-001…FR-004, FR-007, FR-008). Everything here
+// The company panel on the index (FR-001…FR-004, FR-007, FR-008, FR-011, FR-013). Everything here
 // is what the worker read from the chain, kept current by the feed; every action is
 // a transaction the wallet signs.
 
@@ -22,6 +24,7 @@ export function CompanyPanel() {
   const { session } = useSession()
   const company = useCompany(companyId)
   const investors = useInvestors(companyId)
+  const book = useCompanyOffers(companyId)
   const refresh = useRefreshAfterTransaction(companyId)
   const feed = useCompanyFeed(companyId)
 
@@ -91,6 +94,7 @@ export function CompanyPanel() {
           token={token}
           investors={investors.data ?? []}
           investorsError={investors.isError ? investors.error.message : null}
+          book={book}
           isAdmin={isAdmin}
           isOfficer={isOfficer}
           now={now}
@@ -99,7 +103,11 @@ export function CompanyPanel() {
       ))}
 
       <h2>Transfer journal</h2>
-      <JournalSection companyId={view.companyId} tokens={view.tokens} />
+      <JournalSection
+        companyId={view.companyId}
+        tokens={view.tokens}
+        platform={book.data?.platform ?? null}
+      />
     </>
   )
 }
@@ -178,6 +186,7 @@ function TokenSections({
   token,
   investors,
   investorsError,
+  book,
   isAdmin,
   isOfficer,
   now,
@@ -187,6 +196,7 @@ function TokenSections({
   token: TokenView
   investors: InvestorView[]
   investorsError: string | null
+  book: UseQueryResult<CompanyOffers, Error>
   isAdmin: boolean
   isOfficer: boolean
   now: Date
@@ -221,6 +231,9 @@ function TokenSections({
         now={now}
         onSettled={onSettled}
       />
+
+      <h2>Offers{suffix}</h2>
+      <OffersSection token={token} book={book} />
     </>
   )
 }

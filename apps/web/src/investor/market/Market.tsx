@@ -23,10 +23,11 @@ import {
   With,
 } from '../../components/Ledger.tsx'
 import { short, utcDate } from '../../format.ts'
+import { formatPayment, pricePerShare } from '../../market/money.ts'
+import { takeable } from '../../market/offer.ts'
 import { useApi } from '../../providers.tsx'
 import { useMarketOffers, useRefreshInvestor } from '../api.ts'
-import { formatPayment, pricePerShare } from '../money.ts'
-import { parseAcceptForm, takeable } from './model.ts'
+import { parseAcceptForm } from './model.ts'
 
 // The storefront (FR-011, FR-012, FR-013): open offers of other holders that the hook
 // would let reach this wallet now — the API filters with the hook's own rule, and the

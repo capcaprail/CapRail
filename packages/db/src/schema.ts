@@ -17,6 +17,7 @@ import {
   pgEnum,
   pgPolicy,
   pgRole,
+  pgSequence,
   pgTable,
   primaryKey,
   smallint,
@@ -390,6 +391,14 @@ export const holdings = pgTable(
 // `checked_at` is null or older than 30 s; `touched_slot` is the last slot at which
 // the chain changed something the reading depends on, so a read from before it is
 // discarded instead of written.
+// The panel's feed mark on `offers` (SSE `offer`). A trigger (migration 0005, by hand:
+// drizzle-kit does not model triggers) takes the next value on insert and on every
+// update that changes what the panel shows of an offer — status, remaining, the
+// sweep's reading — and keeps the old one otherwise, so the sweep re-reading an
+// unchanged account and `touched_slot` bookkeeping send nothing. Every write path,
+// present or future, goes through it; no writer has to remember.
+export const offersRevision = pgSequence('offers_revision_seq')
+
 export const offers = pgTable(
   'offers',
   {
@@ -422,12 +431,16 @@ export const offers = pgTable(
     staleReason: offerStaleReason('stale_reason'),
     checkedAt: unixTime('checked_at'),
     checkedSlot: bigint('checked_slot', { mode: 'bigint' }),
+    revision: bigint('revision', { mode: 'bigint' })
+      .notNull()
+      .default(sql`nextval('offers_revision_seq')`),
   },
   (t) => [
     // The PDA seeds; seller first — the cabinet (`/me`) lists a wallet's own offers.
     uniqueIndex('offers_seller_idx').on(t.seller, t.mint, t.offerId),
     index('offers_mint_status_idx').on(t.mint, t.status),
     index('offers_company_id_idx').on(t.companyId),
+    index('offers_company_revision_idx').on(t.companyId, t.revision),
     // The stale sweep: open offers, least recently checked first.
     index('offers_open_checked_idx').on(t.checkedAt).where(sql`${t.status} = 'open'`),
     check('offers_remaining_bounded', sql`${t.remaining} <= ${t.amount}`),

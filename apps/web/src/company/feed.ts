@@ -13,7 +13,8 @@ import { companyKeys, type JournalPages } from './api.ts'
 
 // The panel's live feed (SC-003, SC-004): SSE `/companies/:id/events` patches the
 // query cache in place — the journal entry, the investor row and the policy come
-// whole in the event, the cap table is refetched because holdings do not. The
+// whole in the event, the cap table is refetched because holdings do not, and so is
+// the book on an offer event: its quote needs the platform, which only the read has. The
 // stream starts at the moment of connection, so every (re)connection also
 // invalidates the company's reads to cover what a gap may have missed.
 
@@ -85,6 +86,9 @@ export function applyFeedEvent(queryClient: QueryClient, companyId: string, even
       queryClient.setQueryData<CompanyView>(companyKeys.view(companyId), (view) =>
         applyPolicy(view, event),
       )
+      return
+    case 'offer':
+      void queryClient.invalidateQueries({ queryKey: companyKeys.offers(companyId) })
       return
   }
 }

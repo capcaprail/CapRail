@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFeed, type FeedSource } from './feed.ts'
 import { memoryIndexReader } from './memory-reader.ts'
 import type { FeedMarks } from './reader.ts'
-import { seed } from './test-seed.ts'
+import { marketSeed, seed } from './test-seed.ts'
 
 // The poller runs on `setInterval`; on real time a busy machine (the parallel
 // `pnpm gate`) fits fewer ticks into a wait than the test counts on. Fake timers
@@ -79,6 +79,42 @@ describe('createFeed', () => {
     expect(feed.active()).toEqual([])
   })
 
+  it('sends an offer of the company each time its revision moves, in revision order', async () => {
+    const data = marketSeed()
+    const reader = memoryIndexReader(data.index)
+    const feed = createFeed({
+      source: (id, since) => reader.feed({ companyId: id }, id, since),
+      intervalMs: 5,
+      onError: () => {},
+    })
+    const seen: FeedEvent[] = []
+    const unsubscribe = feed.subscribe(data.companyId, (event) => seen.push(event))
+    await tick(12)
+    expect(seen).toEqual([])
+
+    const open = data.index.offers.find((o) => o.offer === data.offers.aliceOpen)
+    const other = data.index.offers.find((o) => o.offer === data.offers.erinOpen)
+    if (open === undefined || other === undefined) throw new Error('seed has no offers')
+    open.remaining = '35'
+    open.revision = 20n
+    // Another company's book is not this feed's.
+    other.revision = 21n
+    data.index.offers.unshift({ ...open, offer: 'OfferNew', remaining: '5', revision: 19n })
+    await tick(12)
+    expect(
+      seen.map((e) => (e.kind === 'offer' ? [e.offer.offer, e.offer.remaining] : e.kind)),
+    ).toEqual([
+      ['OfferNew', '5'],
+      [data.offers.aliceOpen, '35'],
+    ])
+    const sent = seen[0]
+    if (sent?.kind !== 'offer') throw new Error('expected an offer')
+    expect(sent.offer).not.toHaveProperty('revision')
+    await tick(12)
+    expect(seen).toHaveLength(2)
+    unsubscribe()
+  })
+
   it('shares one poller between streams of a company and stops with the last', async () => {
     let polls = 0
     const feed = createFeed({
@@ -86,7 +122,13 @@ describe('createFeed', () => {
         polls += 1
         return Promise.resolve({
           events: [],
-          marks: { attemptId: 0n, statusEventId: 0n, policySlot: 0n, policyKeys: [] },
+          marks: {
+            attemptId: 0n,
+            statusEventId: 0n,
+            policySlot: 0n,
+            policyKeys: [],
+            offerRevision: 0n,
+          },
         })
       },
       intervalMs: 5,
@@ -113,6 +155,7 @@ describe('createFeed', () => {
       statusEventId: 0n,
       policySlot: 0n,
       policyKeys: [],
+      offerRevision: 0n,
     })
     const source: FeedSource = (_, since) => {
       seen.push(since)
@@ -139,7 +182,13 @@ describe('createFeed', () => {
           ? Promise.reject(new Error('db down'))
           : Promise.resolve({
               events: [],
-              marks: { attemptId: 0n, statusEventId: 0n, policySlot: 0n, policyKeys: [] },
+              marks: {
+                attemptId: 0n,
+                statusEventId: 0n,
+                policySlot: 0n,
+                policyKeys: [],
+                offerRevision: 0n,
+              },
             })
       },
       intervalMs: 3,

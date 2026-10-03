@@ -12,6 +12,7 @@ import {
   type JournalEntry,
   type JournalPage,
   type JournalQuery,
+  type JournalTrade,
   type MarketOfferRecord,
   type MarketOffersQuery,
   type Membership,
@@ -21,16 +22,18 @@ import {
   type TokenView,
   type WalletAddress,
 } from '@caprail/shared'
-import { and, asc, desc, eq, gt, gte, lte, ne, type SQL, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, gte, inArray, lte, ne, type SQL, sql } from 'drizzle-orm'
 
-// High-water marks of the three tables the panel's feed watches. `policy_versions`
+// High-water marks of the four tables the panel's feed watches. `policy_versions`
 // has no serial id, so its mark is the slot (inclusive) plus the `mint:version` keys
 // already seen at that slot — two policies of one company can land in one slot.
+// `offers` change in place, so theirs is the row's `revision` (migration 0005).
 export type FeedMarks = {
   attemptId: bigint
   statusEventId: bigint
   policySlot: bigint
   policyKeys: string[]
+  offerRevision: bigint
 }
 
 export const policyKey = (mint: string, version: number): string => `${mint}:${version}`
@@ -100,6 +103,7 @@ type TokenRow = typeof schema.tokens.$inferSelect
 type OfferRow = typeof schema.offers.$inferSelect
 type InvestorRow = typeof schema.investors.$inferSelect
 type AttemptRow = typeof schema.transferAttempts.$inferSelect
+type TradeRow = typeof schema.trades.$inferSelect
 type HoldingRow = typeof schema.holdings.$inferSelect
 
 function tokenView(row: TokenRow): TokenView {
@@ -133,7 +137,58 @@ function investorView(row: InvestorRow): InvestorView {
   }
 }
 
-export function journalEntry(row: AttemptRow): JournalEntry {
+export function journalTrade(row: TradeRow): JournalTrade {
+  return {
+    offer: row.offer,
+    offerId: row.offerId.toString(),
+    pricePerUnit: row.pricePerUnit.toString(),
+    paymentMint: row.paymentMint,
+    payment: row.payment.toString(),
+    fee: row.fee.toString(),
+    sellerReceives: (row.payment - row.fee).toString(),
+  }
+}
+
+export type TradeMatch = Pick<
+  TradeRow,
+  'txSignature' | 'eventIndex' | 'mint' | 'seller' | 'buyer' | 'amount'
+>
+export type AttemptMatch = Pick<
+  AttemptRow,
+  'id' | 'txSignature' | 'eventIndex' | 'mint' | 'sourceOwner' | 'destOwner' | 'amount' | 'outcome'
+>
+
+// The share transfer of a trade is the allowed attempt the hook journaled in the same
+// transaction — same mint, seller to buyer, same amount — and `accept_offer` emits
+// `OfferAccepted` after that transfer, so it is the nearest such attempt before the
+// trade's event. Two accepts of one transaction pair each with its own transfer.
+export function pairTrades<A extends AttemptMatch, T extends TradeMatch>(
+  attempts: readonly A[],
+  trades: readonly T[],
+): Map<bigint, T> {
+  const paired = new Map<bigint, T>()
+  for (const trade of trades) {
+    let best: A | undefined
+    for (const attempt of attempts) {
+      if (
+        attempt.outcome === 'allowed' &&
+        attempt.txSignature === trade.txSignature &&
+        attempt.mint === trade.mint &&
+        attempt.sourceOwner === trade.seller &&
+        attempt.destOwner === trade.buyer &&
+        attempt.amount === trade.amount &&
+        attempt.eventIndex < trade.eventIndex &&
+        (best === undefined || attempt.eventIndex > best.eventIndex)
+      ) {
+        best = attempt
+      }
+    }
+    if (best !== undefined) paired.set(best.id, trade)
+  }
+  return paired
+}
+
+export function journalEntry(row: AttemptRow, trade: TradeRow | null = null): JournalEntry {
   return {
     id: row.id.toString(),
     mint: row.mint,
@@ -149,6 +204,7 @@ export function journalEntry(row: AttemptRow): JournalEntry {
     slot: row.slot === null ? null : Number(row.slot),
     blockTime: iso(row.blockTime),
     logs: row.logs,
+    trade: trade === null ? null : journalTrade(trade),
   }
 }
 
@@ -269,6 +325,32 @@ function journalConditions(companyId: bigint, query: JournalQuery): SQL[] {
   return conditions
 }
 
+// The journal rows with their trades: one more query for the trades of the
+// transactions on the page, paired in code (`pairTrades`).
+async function withTrades(tx: Tx, companyId: bigint, rows: AttemptRow[]): Promise<JournalEntry[]> {
+  const signatures = [
+    ...new Set(
+      rows.flatMap((row) =>
+        row.outcome === 'allowed' && row.txSignature !== null ? [row.txSignature] : [],
+      ),
+    ),
+  ]
+  const trades =
+    signatures.length === 0
+      ? []
+      : await tx
+          .select()
+          .from(schema.trades)
+          .where(
+            and(
+              eq(schema.trades.companyId, companyId),
+              inArray(schema.trades.txSignature, signatures),
+            ),
+          )
+  const paired = pairTrades(rows, trades)
+  return rows.map((row) => journalEntry(row, paired.get(row.id) ?? null))
+}
+
 async function companyTokens(tx: Tx, companyId: bigint): Promise<TokenRow[]> {
   return tx
     .select()
@@ -384,7 +466,7 @@ export function drizzleIndexReader(db: Db): IndexReader {
         const page = rows.slice(0, query.limit)
         const last = page.at(-1)
         return {
-          items: page.map(journalEntry),
+          items: await withTrades(tx, BigInt(companyId), page),
           nextCursor:
             rows.length > query.limit && last !== undefined
               ? encodeCursor(last.blockTime, last.id)
@@ -403,7 +485,7 @@ export function drizzleIndexReader(db: Db): IndexReader {
               .where(and(eq(policyVersions.companyId, company), eq(policyVersions.slot, slot)))
           ).map((row) => policyKey(row.mint, row.version))
         if (since === null) {
-          const [attempt, status, policy] = await Promise.all([
+          const [attempt, status, policy, offer] = await Promise.all([
             tx
               .select({ max: sql<string | null>`max(${transferAttempts.id})` })
               .from(transferAttempts)
@@ -416,6 +498,10 @@ export function drizzleIndexReader(db: Db): IndexReader {
               .select({ max: sql<string | null>`max(${policyVersions.slot})` })
               .from(policyVersions)
               .where(eq(policyVersions.companyId, company)),
+            tx
+              .select({ max: sql<string | null>`max(${offers.revision})` })
+              .from(offers)
+              .where(eq(offers.companyId, company)),
           ])
           const policySlot = BigInt(policy[0]?.max ?? 0)
           return {
@@ -425,10 +511,11 @@ export function drizzleIndexReader(db: Db): IndexReader {
               statusEventId: BigInt(status[0]?.max ?? 0),
               policySlot,
               policyKeys: await policiesAt(policySlot),
+              offerRevision: BigInt(offer[0]?.max ?? 0),
             },
           }
         }
-        const [attempts, statuses, policyRows] = await Promise.all([
+        const [attempts, statuses, policyRows, offerRows] = await Promise.all([
           tx
             .select()
             .from(transferAttempts)
@@ -466,12 +553,22 @@ export function drizzleIndexReader(db: Db): IndexReader {
               ),
             )
             .orderBy(asc(policyVersions.slot), asc(policyVersions.version)),
+          // A revision taken by a write that commits after a later one is passed over,
+          // as an attempt id would be; the panel rereads the whole book on any offer
+          // event, so the next one brings it.
+          tx
+            .select()
+            .from(offers)
+            .where(and(eq(offers.companyId, company), gt(offers.revision, since.offerRevision)))
+            .orderBy(asc(offers.revision)),
         ])
         const policies = policyRows.filter(
           (row) => !since.policyKeys.includes(policyKey(row.mint, row.version)),
         )
         const events: FeedEvent[] = [
-          ...attempts.map((row): FeedEvent => ({ kind: 'attempt', entry: journalEntry(row) })),
+          ...(await withTrades(tx, company, attempts)).map(
+            (entry): FeedEvent => ({ kind: 'attempt', entry }),
+          ),
           ...statuses.map(
             (row): FeedEvent => ({ kind: 'status', investor: investorView(row.investor) }),
           ),
@@ -488,6 +585,7 @@ export function drizzleIndexReader(db: Db): IndexReader {
               setAt: row.setAt === null ? null : iso(row.setAt),
             }),
           ),
+          ...offerRows.map((row): FeedEvent => ({ kind: 'offer', offer: offerRecord(row) })),
         ]
         const policySlot = policies.at(-1)?.slot ?? since.policySlot
         return {
@@ -502,6 +600,7 @@ export function drizzleIndexReader(db: Db): IndexReader {
                 .filter((row) => row.slot === policySlot)
                 .map((row) => policyKey(row.mint, row.version)),
             ],
+            offerRevision: offerRows.at(-1)?.revision ?? since.offerRevision,
           },
         }
       }),

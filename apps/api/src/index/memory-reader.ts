@@ -39,6 +39,9 @@ export type MemoryPolicyVersion = {
 
 export type MemoryStatusEvent = { id: bigint; investor: InvestorView }
 
+// `revision` is the feed mark the migration's trigger keeps on the row.
+export type MemoryOffer = OfferRecord & { revision: bigint }
+
 // Rows the way the routes see them, plus what RLS would use to scope them. Test
 // double of `drizzleIndexReader`: the same contract over arrays, with visibility
 // decided the way the policies do — a company scope opens its rows, a wallet sees
@@ -51,7 +54,7 @@ export type MemoryIndex = {
   statusEvents: (MemoryStatusEvent & { companyId: string })[]
   policyVersions: (MemoryPolicyVersion & { companyId: string })[]
   // Newest first, as `created_slot desc` orders them.
-  offers: OfferRecord[]
+  offers: MemoryOffer[]
 }
 
 export function memoryIndex(seed: Partial<MemoryIndex> = {}): MemoryIndex {
@@ -99,6 +102,8 @@ function visible(index: MemoryIndex, scope: TenantScope, companyId: string): boo
     rolesIn(index, company, scope.wallet).length > 0
   )
 }
+
+const record = ({ revision: _r, ...offer }: MemoryOffer): OfferRecord => offer
 
 export function memoryIndexReader(index: MemoryIndex): IndexReader {
   const companyOf = (mint: string) =>
@@ -199,12 +204,19 @@ export function memoryIndexReader(index: MemoryIndex): IndexReader {
       if (!visible(index, scope, companyId)) {
         return Promise.resolve({
           events: [],
-          marks: since ?? { attemptId: 0n, statusEventId: 0n, policySlot: 0n, policyKeys: [] },
+          marks: since ?? {
+            attemptId: 0n,
+            statusEventId: 0n,
+            policySlot: 0n,
+            policyKeys: [],
+            offerRevision: 0n,
+          },
         })
       }
       const attempts = index.attempts.filter((a) => a.companyId === companyId)
       const statuses = index.statusEvents.filter((s) => s.companyId === companyId)
       const policies = index.policyVersions.filter((p) => p.companyId === companyId)
+      const offers = index.offers.filter((o) => o.companyId === companyId)
       const max = (values: bigint[]) => values.reduce((m, v) => (v > m ? v : m), 0n)
       const keysAt = (slot: bigint) =>
         policies.filter((p) => p.slot === slot).map((p) => policyKey(p.mint, p.version))
@@ -217,6 +229,7 @@ export function memoryIndexReader(index: MemoryIndex): IndexReader {
             statusEventId: max(statuses.map((s) => s.id)),
             policySlot,
             policyKeys: keysAt(policySlot),
+            offerRevision: max(offers.map((o) => o.revision)),
           },
         })
       }
@@ -226,6 +239,9 @@ export function memoryIndexReader(index: MemoryIndex): IndexReader {
         (p) =>
           p.slot >= since.policySlot && !since.policyKeys.includes(policyKey(p.mint, p.version)),
       )
+      const newOffers = offers
+        .filter((o) => o.revision > since.offerRevision)
+        .sort((a, b) => (a.revision < b.revision ? -1 : 1))
       const events: FeedEvent[] = [
         ...newAttempts.map(
           ({ companyId: _c, reportedBy: _r, ...entry }): FeedEvent => ({ kind: 'attempt', entry }),
@@ -240,6 +256,7 @@ export function memoryIndexReader(index: MemoryIndex): IndexReader {
             setAt: p.setAt,
           }),
         ),
+        ...newOffers.map((o): FeedEvent => ({ kind: 'offer', offer: record(o) })),
       ]
       const policySlot = max([since.policySlot, ...newPolicies.map((p) => p.slot)])
       const marks: FeedMarks = {
@@ -247,6 +264,7 @@ export function memoryIndexReader(index: MemoryIndex): IndexReader {
         statusEventId: max([since.statusEventId, ...newStatuses.map((s) => s.id)]),
         policySlot,
         policyKeys: keysAt(policySlot),
+        offerRevision: max([since.offerRevision, ...newOffers.map((o) => o.revision)]),
       }
       return Promise.resolve({ events, marks })
     },
@@ -273,6 +291,7 @@ export function memoryIndexReader(index: MemoryIndex): IndexReader {
         slot: null,
         blockTime: now.toISOString(),
         logs: report.logs,
+        trade: null,
         reportedBy,
       })
       return Promise.resolve({ id })
@@ -281,12 +300,14 @@ export function memoryIndexReader(index: MemoryIndex): IndexReader {
     companyOffers: (scope, companyId, query) => {
       if (!visible(index, scope, companyId)) return Promise.resolve([])
       return Promise.resolve(
-        index.offers.filter(
-          (o) =>
-            o.companyId === companyId &&
-            (query.mint === undefined || o.mint === query.mint) &&
-            (query.status === undefined || o.status === query.status),
-        ),
+        index.offers
+          .filter(
+            (o) =>
+              o.companyId === companyId &&
+              (query.mint === undefined || o.mint === query.mint) &&
+              (query.status === undefined || o.status === query.status),
+          )
+          .map(record),
       )
     },
 
@@ -313,7 +334,7 @@ export function memoryIndexReader(index: MemoryIndex): IndexReader {
             if (company === undefined || token === undefined) return []
             return [
               {
-                ...o,
+                ...record(o),
                 token: {
                   companyName: company.name,
                   name: token.name,
@@ -346,7 +367,7 @@ export function memoryIndexReader(index: MemoryIndex): IndexReader {
       }
       return Promise.resolve({
         positions: mergePositions(inputs, at),
-        offers: index.offers.filter((o) => o.seller === wallet && o.status === 'open'),
+        offers: index.offers.filter((o) => o.seller === wallet && o.status === 'open').map(record),
       })
     },
   }

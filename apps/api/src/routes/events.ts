@@ -14,7 +14,7 @@ export type EventsDeps = {
 }
 
 // SSE `/companies/:id/events`: `event:` is the record's `kind` (`attempt`, `status`,
-// `policy`), `data:` the JSON of a `FeedEvent`. The stream starts from the moment
+// `policy`, `offer`), `data:` the JSON of a `FeedEvent`. The stream starts from the moment
 // of connection; the panel loads the page first and listens for what follows.
 // Mounted behind the same middleware as the other company routes.
 export function eventsRoute(deps: EventsDeps): Hono<AppEnv> {

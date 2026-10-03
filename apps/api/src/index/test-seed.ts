@@ -6,7 +6,7 @@ import type {
   WalletAddress,
 } from '@caprail/shared'
 import { testWallet } from '../auth/test-wallet.ts'
-import { type MemoryIndex, memoryIndex } from './memory-reader.ts'
+import { type MemoryIndex, type MemoryOffer, memoryIndex } from './memory-reader.ts'
 
 // One company with one token, two investors and a short journal — the shape of
 // the US1 demo, as the memory reader serves it.
@@ -87,6 +87,7 @@ export function seed(): Seed {
     slot: 40 + id,
     blockTime: `2026-09-14T12:${String(minute).padStart(2, '0')}:00.000Z`,
     logs: ['Program log: Instruction: TransferChecked'],
+    trade: null,
     reportedBy: null,
     ...entry,
   })
@@ -180,10 +181,12 @@ export function marketSeed(): MarketSeed {
     updatedAt: T0,
     updatedBy: base.officer,
   })
+  let revision = 0n
   const offer = (
     name: string,
     patch: Partial<OfferRecord> & Pick<OfferRecord, 'seller'>,
-  ): OfferRecord => ({
+  ): MemoryOffer => ({
+    revision: ++revision,
     offer: name,
     mint: base.mint,
     companyId: base.companyId,

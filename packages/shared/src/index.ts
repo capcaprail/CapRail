@@ -43,8 +43,6 @@ export {
   capTableSchema,
   companyIdSchema,
   companyViewSchema,
-  type FeedEvent,
-  feedEventSchema,
   HOLDING_SOURCES,
   type Holder,
   holderSchema,
@@ -63,15 +61,18 @@ export {
   type JournalEntry,
   type JournalPage,
   type JournalQuery,
+  type JournalTrade,
   journalEntrySchema,
   journalPageSchema,
   journalQuerySchema,
+  journalTradeSchema,
   type TokenView,
   type TransferPolicy,
   tokenViewSchema,
   transferPolicySchema,
   u64StringSchema,
 } from './company-api.ts'
+export { type FeedEvent, feedEventSchema } from './feed.ts'
 export {
   type Admission,
   type AdmissionRecord,

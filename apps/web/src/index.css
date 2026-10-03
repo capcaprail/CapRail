@@ -553,6 +553,10 @@
   .off .tr {
     grid-template-columns: 1fr 130px 5px 100px 100px 100px 140px 110px 140px 100px;
   }
+  /* the company's book: one line per offer of the mint, the status last */
+  .book .tr {
+    grid-template-columns: 150px minmax(100px, 1fr) 5px 110px 110px 120px 140px 120px 200px;
+  }
   /* the investor's own open offers: the money columns repeat the storefront's */
   .my .tr {
     grid-template-columns: 1fr 5px 130px 140px 150px 120px 150px 120px;
@@ -566,6 +570,10 @@
   }
   .jr[data-f="settled"] .tr.ref,
   .att[data-f="settled"] .tr.ref {
+    display: none;
+  }
+  .jr[data-f="trades"] .tr.ref,
+  .jr[data-f="trades"] .tr.set:not(.trd) {
     display: none;
   }
   .jr[data-f="refused"] .tr.set,

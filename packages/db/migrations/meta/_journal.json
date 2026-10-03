@@ -36,6 +36,13 @@
       "when": 1790788116529,
       "tag": "0004_us2_market_visibility",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791034414666,
+      "tag": "0005_us2_offer_revision",
+      "breakpoints": true
     }
   ]
 }

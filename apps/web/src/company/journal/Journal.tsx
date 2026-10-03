@@ -1,4 +1,4 @@
-import type { JournalEntry, TokenView } from '@caprail/shared'
+import type { JournalEntry, PlatformView, TokenView } from '@caprail/shared'
 import { useState } from 'react'
 import {
   Action,
@@ -14,16 +14,33 @@ import {
   With,
 } from '../../components/Ledger.tsx'
 import { short, utcDateTime } from '../../format.ts'
+import { formatPayment } from '../../market/money.ts'
 import { useJournal } from '../api.ts'
 import { fromBaseUnits } from '../fields.ts'
-import { JOURNAL_FILTERS, type JournalFilter, journalCounts } from './model.ts'
+import {
+  JOURNAL_FILTERS,
+  type JournalCounts,
+  type JournalFilter,
+  journalCounts,
+  tradeLine,
+} from './model.ts'
 
 // The transfer journal of the company (FR-008): every attempt the hook saw — settled
 // or refused, on chain or in the panel's simulation — newest first, live through the
 // feed. Company-wide: a company with two tokens reads one journal, the symbol on
-// each amount.
+// each amount. A transfer that was a market trade carries its money side — price,
+// payment, the platform's fee (FR-013) — in the same row: one trade, one line.
 
-export function JournalSection({ companyId, tokens }: { companyId: string; tokens: TokenView[] }) {
+export function JournalSection({
+  companyId,
+  tokens,
+  platform,
+}: {
+  companyId: string
+  tokens: TokenView[]
+  // From the book read; null until it answers or when the platform is not set up.
+  platform: PlatformView | null
+}) {
   const journal = useJournal(companyId)
   const [filter, setFilter] = useState<JournalFilter>('all')
   const entries = journal.data?.pages.flatMap((page) => page.items) ?? []
@@ -50,16 +67,7 @@ export function JournalSection({ companyId, tokens }: { companyId: string; token
         ) : journal.isError ? (
           <span className="text-stamp">{journal.error.message}</span>
         ) : (
-          <>
-            {counts.attempts} {counts.attempts === 1 ? 'attempt' : 'attempts'}
-            {journal.hasNextPage && ' loaded'} · {counts.settled} settled · {counts.refused} refused
-            {counts.refused > 0 && (
-              <>
-                , of which {counts.refusedOnChain} on chain and {counts.refusedInSimulation} in
-                simulation
-              </>
-            )}
-          </>
+          <CountsLine counts={counts} partial={journal.hasNextPage} platform={platform} />
         )}
       </div>
       <Table kind="jr" data-f={filter}>
@@ -74,7 +82,12 @@ export function JournalSection({ companyId, tokens }: { companyId: string; token
           <Cell>Signature</Cell>
         </Row>
         {entries.map((entry) => (
-          <EntryRow key={entry.id} entry={entry} token={byMint.get(entry.mint)} />
+          <EntryRow
+            key={entry.id}
+            entry={entry}
+            token={byMint.get(entry.mint)}
+            platform={platform}
+          />
         ))}
         <EmptyRows before={3} after={4} count={entries.length === 0 ? 3 : 2} />
       </Table>
@@ -87,9 +100,40 @@ export function JournalSection({ companyId, tokens }: { companyId: string; token
       )}
       <Help>
         chain — the network saw the transaction: settled, or refused by the hook after it was sent.
-        simulation — this app simulated the transfer before asking the wallet to sign; the network
-        would have refused it, and it was never sent.
+        trade — the shares moved by an accepted offer, paid for in the same transaction; the fee is
+        the platform's, out of the buyer's payment. simulation — this app simulated the transfer
+        before asking the wallet to sign; the network would have refused it, and it was never sent.
       </Help>
+    </>
+  )
+}
+
+function CountsLine({
+  counts,
+  partial,
+  platform,
+}: {
+  counts: JournalCounts
+  // More pages exist: the tallies are of what is loaded.
+  partial: boolean
+  platform: PlatformView | null
+}) {
+  return (
+    <>
+      {counts.attempts} {counts.attempts === 1 ? 'attempt' : 'attempts'}
+      {partial && ' loaded'} · {counts.settled} settled
+      {counts.trades > 0 && (
+        <>
+          , of which {counts.trades} {counts.trades === 1 ? 'trade' : 'trades'}
+          {platform !== null && <> with {formatPayment(counts.fees, platform)} in fees</>}
+        </>
+      )}{' '}
+      · {counts.refused} refused
+      {counts.refused > 0 && (
+        <>
+          , of which {counts.refusedOnChain} on chain and {counts.refusedInSimulation} in simulation
+        </>
+      )}
     </>
   )
 }
@@ -111,8 +155,17 @@ function party(owner: string | null, treasury: boolean) {
   )
 }
 
-function EntryRow({ entry, token }: { entry: JournalEntry; token: TokenView | undefined }) {
+function EntryRow({
+  entry,
+  token,
+  platform,
+}: {
+  entry: JournalEntry
+  token: TokenView | undefined
+  platform: PlatformView | null
+}) {
   const refused = entry.outcome === 'rejected'
+  const trade = entry.trade === null ? null : tradeLine(entry.trade, token, platform)
   const amount =
     entry.amount === null
       ? '—'
@@ -120,7 +173,7 @@ function EntryRow({ entry, token }: { entry: JournalEntry; token: TokenView | un
         ? `${entry.amount} base units`
         : `${fromBaseUnits(entry.amount, token.decimals)} ${token.symbol}`
   return (
-    <Row className={refused ? 'ref' : 'set'}>
+    <Row className={refused ? 'ref' : trade === null ? 'set' : 'set trd'}>
       <Cell k date>
         {utcDateTime(entry.blockTime)}
       </Cell>
@@ -140,6 +193,14 @@ function EntryRow({ entry, token }: { entry: JournalEntry; token: TokenView | un
                 <pre>{entry.logs.join('\n')}</pre>
               </details>
             )}
+          </With>
+        ) : trade !== null ? (
+          <With>
+            <span>trade</span>
+            <Note>{trade.price}</Note>
+            <Note>
+              paid {trade.paid} · fee {trade.fee} · seller received {trade.sellerReceives}
+            </Note>
           </With>
         ) : (
           <With>

@@ -1,7 +1,7 @@
 import { quoteOffer } from '@caprail/chain'
 import type { OfferRecord } from '@caprail/shared'
 import { describe, expect, it } from 'vitest'
-import { parseAcceptForm, STALE_TEXT, takeable } from './model.ts'
+import { parseAcceptForm } from './model.ts'
 
 type Terms = Pick<OfferRecord, 'remaining' | 'available' | 'staleReason' | 'pricePerUnit'>
 const offer = (patch: Partial<Terms> = {}): Terms => ({
@@ -10,24 +10,6 @@ const offer = (patch: Partial<Terms> = {}): Terms => ({
   staleReason: null,
   pricePerUnit: '1500000',
   ...patch,
-})
-
-describe('takeable', () => {
-  it('is the whole remainder when the worker found it all, or has not looked yet', () => {
-    expect(takeable(offer())).toEqual({ max: 60n, reason: null })
-    expect(takeable(offer({ available: null }))).toEqual({ max: 60n, reason: null })
-  })
-
-  it('is what the seller can deliver, with the reason, when that is less', () => {
-    expect(takeable(offer({ available: '25', staleReason: 'balance_short' }))).toEqual({
-      max: 25n,
-      reason: STALE_TEXT.balance_short,
-    })
-    expect(takeable(offer({ available: '0', staleReason: 'not_delegated' }))).toEqual({
-      max: 0n,
-      reason: 'the seller withdrew the delegation',
-    })
-  })
 })
 
 describe('parseAcceptForm', () => {

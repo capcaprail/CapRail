@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { offerRecordSchema } from '@caprail/shared'
 import { getTableName, is } from 'drizzle-orm'
 import { PgTable } from 'drizzle-orm/pg-core'
 import { describe, expect, it } from 'vitest'
@@ -152,6 +153,41 @@ describe('migrations', () => {
       `REVOKE ALL ON FUNCTION ${signature} FROM PUBLIC, "anon", "authenticated";`,
     )
     expect(sql).toContain(`GRANT EXECUTE ON FUNCTION ${signature} TO "caprail_api";`)
+  })
+
+  it('bump the offer revision on every change the panel shows, and only then', () => {
+    const fn = '"public"."caprail_offers_revision"()'
+    const created = sql.indexOf(`CREATE FUNCTION ${fn}`)
+    expect(created).toBeGreaterThan(sql.indexOf('ADD COLUMN "revision"'))
+    expect(sql).toContain(
+      `CREATE TRIGGER "offers_revision" BEFORE INSERT OR UPDATE ON "offers" FOR EACH ROW EXECUTE FUNCTION ${fn};`,
+    )
+    expect(sql).toContain(`REVOKE ALL ON FUNCTION ${fn} FROM PUBLIC, "anon", "authenticated";`)
+    const body = sql.slice(created, sql.indexOf('$$;', created))
+    const watched = (side: 'NEW' | 'OLD') => {
+      const tuple = body.match(new RegExp(`\\((${side}\\.\\w+(?:, ${side}\\.\\w+)*)\\)`))?.[1]
+      return [...(tuple ?? '').matchAll(/\.(\w+)/g)].map((m) => m[1]).sort()
+    }
+    expect(watched('NEW')).toEqual(watched('OLD'))
+    // Every field of the record the panel reads that can change after the offer is
+    // created — except `checkedAt`, which the sweep rewrites every 30 s without news.
+    const fixed = ['offer', 'mint', 'companyId', 'seller', 'offerId', 'amount', 'pricePerUnit']
+    const changing = Object.keys(offerRecordSchema.shape)
+      .filter((key) => ![...fixed, 'paymentMint', 'createdAt', 'checkedAt'].includes(key))
+      .map((key) => key.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`))
+    expect(watched('NEW')).toEqual(changing.sort())
+  })
+
+  it("list every migration file in drizzle's journal, which is all the migrator applies", () => {
+    const journal = JSON.parse(readFileSync(join(migrations, 'meta/_journal.json'), 'utf8')) as {
+      entries: { idx: number; tag: string }[]
+    }
+    const files = readdirSync(migrations)
+      .filter((file) => file.endsWith('.sql'))
+      .sort()
+      .map((file) => file.replace(/\.sql$/, ''))
+    expect(journal.entries.map((entry) => entry.tag)).toEqual(files)
+    expect(journal.entries.map((entry) => entry.idx)).toEqual(files.map((_, i) => i))
   })
 
   it('name the same role in withTenant as the migration creates', () => {

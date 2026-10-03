@@ -28,6 +28,7 @@ const entry = (over: Partial<JournalEntry>): JournalEntry => ({
   slot: 10,
   blockTime: '2026-09-14T00:00:00.000Z',
   logs: [],
+  trade: null,
   ...over,
 })
 

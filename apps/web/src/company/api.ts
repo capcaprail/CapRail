@@ -3,8 +3,10 @@ import {
   type AttemptReportResponse,
   attemptReportResponseSchema,
   type CapTable,
+  type CompanyOffers,
   type CompanyView,
   capTableSchema,
+  companyOffersSchema,
   companyViewSchema,
   type InvestorView,
   investorViewSchema,
@@ -32,6 +34,7 @@ export const companyKeys = {
   investors: (companyId: string) => ['company', companyId, 'investors'] as const,
   capTable: (companyId: string, mint: string) => ['company', companyId, 'cap-table', mint] as const,
   journal: (companyId: string) => ['company', companyId, 'journal'] as const,
+  offers: (companyId: string) => ['company', companyId, 'offers'] as const,
 }
 
 // FORBIDDEN or NOT_FOUND on a company this key holds a role in means the index has
@@ -71,6 +74,16 @@ export function useCapTable(companyId: string, mint: string): UseQueryResult<Cap
         `/companies/${companyId}/cap-table?${new URLSearchParams({ mint })}`,
         capTableSchema,
       ),
+  })
+}
+
+// The whole book, every mint and status, in one read: a company has a token or two
+// and offers in the dozens, and the feed refetches it on any offer event.
+export function useCompanyOffers(companyId: string): UseQueryResult<CompanyOffers, Error> {
+  const api = useApi()
+  return useQuery({
+    queryKey: companyKeys.offers(companyId),
+    queryFn: () => api.request('GET', `/companies/${companyId}/offers`, companyOffersSchema),
   })
 }
 

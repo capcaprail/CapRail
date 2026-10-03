@@ -29,6 +29,7 @@ const entry = (id: string, outcome: JournalEntry['outcome'] = 'allowed'): Journa
   slot: 5,
   blockTime: '2026-09-14T10:00:00.000Z',
   logs: [],
+  trade: null,
 })
 
 const pages = (...ids: string[][]): JournalPages => ({
@@ -150,5 +151,38 @@ describe('applyFeedEvent', () => {
       client.getQueryData<JournalPages>(companyKeys.journal('1'))?.pages[0]?.items.map((e) => e.id),
     ).toEqual(['3', '2', '1'])
     expect(client.getQueryState(companyKeys.capTable('1', MINT))?.isInvalidated).toBe(true)
+  })
+})
+
+describe('applyFeedEvent on an offer', () => {
+  it("rereads this company's book and nothing else", () => {
+    const client = new QueryClient()
+    client.setQueryData(companyKeys.offers('1'), { platform: null, offers: [] })
+    client.setQueryData(companyKeys.offers('2'), { platform: null, offers: [] })
+    client.setQueryData(companyKeys.journal('1'), pages(['1']))
+    applyFeedEvent(client, '1', {
+      kind: 'offer',
+      offer: {
+        offer: 'Offer1111111111111111111111111111111111111',
+        mint: MINT,
+        companyId: '1',
+        seller: ALICE,
+        offerId: '1',
+        amount: '100',
+        remaining: '40',
+        pricePerUnit: '1500000',
+        paymentMint: 'Pay1111111111111111111111111111111111111111',
+        rofrUntil: null,
+        status: 'open',
+        createdAt: '2026-09-14T10:00:00.000Z',
+        closedAt: null,
+        available: '40',
+        staleReason: null,
+        checkedAt: null,
+      },
+    })
+    expect(client.getQueryState(companyKeys.offers('1'))?.isInvalidated).toBe(true)
+    expect(client.getQueryState(companyKeys.offers('2'))?.isInvalidated).toBe(false)
+    expect(client.getQueryState(companyKeys.journal('1'))?.isInvalidated).toBe(false)
   })
 })

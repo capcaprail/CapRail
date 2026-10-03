@@ -1,7 +1,7 @@
 import { type OfferQuoteAmounts, quoteOffer, validateOfferTerms } from '@caprail/chain'
 import type { OfferView, Position } from '@caprail/shared'
 import { amountField, fromBaseUnits, type Parsed } from '../../company/fields.ts'
-import { type PaymentMint, pricePerUnitField } from '../money.ts'
+import { type PaymentMint, pricePerUnitField } from '../../market/money.ts'
 
 // The seller's side: what may be offered, and the offer form.
 

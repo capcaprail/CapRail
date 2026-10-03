@@ -20,9 +20,9 @@ import {
   With,
 } from '../../components/Ledger.tsx'
 import { short, utcDate } from '../../format.ts'
+import { formatPayment, paymentLabel, pricePerShare } from '../../market/money.ts'
+import { takeable } from '../../market/offer.ts'
 import { useMe, useRefreshInvestor } from '../api.ts'
-import { takeable } from '../market/model.ts'
-import { formatPayment, paymentLabel, pricePerShare } from '../money.ts'
 import { openOfferOf, parseOfferForm, randomOfferId } from './model.ts'
 
 // The investor's cabinet (FR-016): what the wallet holds, where it stands with each

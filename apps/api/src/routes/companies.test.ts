@@ -154,6 +154,27 @@ describe('GET /companies/:id/journal', () => {
     expect(second.nextCursor).toBeNull()
   })
 
+  it('carries the money side of a transfer that was a trade, and null elsewhere', async () => {
+    const data = seed()
+    const trade = {
+      offer: 'OfferAliceOpen1111111111111111111111111111',
+      offerId: '2',
+      pricePerUnit: '1500000',
+      paymentMint: 'Pay1111111111111111111111111111111111111111',
+      payment: '15000000',
+      fee: '150000',
+      sellerReceives: '14850000',
+    }
+    const second = data.index.attempts[1]
+    if (second === undefined) throw new Error('seed has no second attempt')
+    second.trade = trade
+    const { as } = build(data)
+    const page = journalPageSchema.parse(
+      await (await as(data.admin, `/companies/${data.companyId}/journal`)).json(),
+    )
+    expect(page.items.map((e) => e.trade)).toEqual([null, trade, null])
+  })
+
   it('filters by mint and by time', async () => {
     const { as, data } = build()
     const byMint = journalPageSchema.parse(
