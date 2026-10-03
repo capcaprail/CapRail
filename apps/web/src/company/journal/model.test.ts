@@ -147,6 +147,15 @@ describe('tradeLine', () => {
     )
   })
 
+  it('waits for the platform instead of flashing base units while it is read', () => {
+    expect(tradeLine(TRADE, { decimals: 0 }, undefined)).toEqual({
+      price: '… per share',
+      paid: '…',
+      fee: '…',
+      sellerReceives: '…',
+    })
+  })
+
   it('falls back to base units rather than guess the currency', () => {
     expect(tradeLine(TRADE, { decimals: 0 }, null).fee).toBe('7500000 base units')
     expect(tradeLine({ ...TRADE, paymentMint: 'Other' }, { decimals: 0 }, platform).paid).toBe(

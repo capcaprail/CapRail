@@ -106,7 +106,7 @@ export function CompanyPanel() {
       <JournalSection
         companyId={view.companyId}
         tokens={view.tokens}
-        platform={book.data?.platform ?? null}
+        platform={book.isSuccess ? book.data.platform : undefined}
       />
     </>
   )

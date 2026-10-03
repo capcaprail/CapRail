@@ -91,6 +91,11 @@ export const JOURNAL_FILTERS: ReadonlyArray<{ value: JournalFilter; label: strin
 // the platform's fee out of it and what reached the seller. Named in the payment
 // mint the platform labels; a trade in another mint (or a deployment the API could
 // not read the platform of) is shown in base units rather than in a guessed currency.
+// `undefined` is "not read yet": the amounts wait instead of flashing base units.
+export type PlatformReading = PlatformView | null | undefined
+
+export const PENDING_AMOUNT = '…'
+
 export type TradeLine = {
   price: string
   paid: string
@@ -101,11 +106,14 @@ export type TradeLine = {
 export function tradeLine(
   trade: JournalTrade,
   token: Pick<TokenView, 'decimals'> | undefined,
-  platform: PlatformView | null,
+  platform: PlatformReading,
 ): TradeLine {
-  const known = platform !== null && platform.paymentMint === trade.paymentMint
-  const money = (amount: bigint | string) =>
-    known ? formatPayment(amount, platform) : `${amount} base units`
+  const money = (amount: bigint | string) => {
+    if (platform === undefined) return PENDING_AMOUNT
+    return platform !== null && platform.paymentMint === trade.paymentMint
+      ? formatPayment(amount, platform)
+      : `${amount} base units`
+  }
   return {
     price:
       token === undefined

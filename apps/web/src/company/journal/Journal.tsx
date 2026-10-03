@@ -1,4 +1,4 @@
-import type { JournalEntry, PlatformView, TokenView } from '@caprail/shared'
+import type { JournalEntry, TokenView } from '@caprail/shared'
 import { useState } from 'react'
 import {
   Action,
@@ -22,6 +22,7 @@ import {
   type JournalCounts,
   type JournalFilter,
   journalCounts,
+  type PlatformReading,
   tradeLine,
 } from './model.ts'
 
@@ -38,8 +39,8 @@ export function JournalSection({
 }: {
   companyId: string
   tokens: TokenView[]
-  // From the book read; null until it answers or when the platform is not set up.
-  platform: PlatformView | null
+  // From the book read: undefined until it answers, null when the platform is not set up.
+  platform: PlatformReading
 }) {
   const journal = useJournal(companyId)
   const [filter, setFilter] = useState<JournalFilter>('all')
@@ -116,7 +117,7 @@ function CountsLine({
   counts: JournalCounts
   // More pages exist: the tallies are of what is loaded.
   partial: boolean
-  platform: PlatformView | null
+  platform: PlatformReading
 }) {
   return (
     <>
@@ -125,7 +126,7 @@ function CountsLine({
       {counts.trades > 0 && (
         <>
           , of which {counts.trades} {counts.trades === 1 ? 'trade' : 'trades'}
-          {platform !== null && <> with {formatPayment(counts.fees, platform)} in fees</>}
+          {platform != null && <> with {formatPayment(counts.fees, platform)} in fees</>}
         </>
       )}{' '}
       · {counts.refused} refused
@@ -162,7 +163,7 @@ function EntryRow({
 }: {
   entry: JournalEntry
   token: TokenView | undefined
-  platform: PlatformView | null
+  platform: PlatformReading
 }) {
   const refused = entry.outcome === 'rejected'
   const trade = entry.trade === null ? null : tradeLine(entry.trade, token, platform)
