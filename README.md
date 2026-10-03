@@ -8,13 +8,16 @@ wallet that is not admitted is refused by the network, atomically, with the
 reason in the transaction logs. The cap table is read from the chain, not
 maintained by hand.
 
+**Live:** the site <https://capcaprail.github.io/CapRail/> and the panel at
+<https://capcaprail.github.io/CapRail/app/>, on Solana devnet.
+
 Two programs serve every issuer. `caprail` holds state and actions: company,
-token, policy, registry, distribution from the treasury (later grants and
-offers). `caprail-hook` is the rule: Token-2022 calls it on each
+token, policy, registry, distribution from the treasury, the platform and its
+offers (later grants). `caprail-hook` is the rule: Token-2022 calls it on each
 `transfer_checked`, and it only reads what `caprail` writes. A company's policy
 is data in an account — changing it takes one transaction, not a reissue.
 
-## What v0.1.0 does
+## What v0.2.0 does
 
 - Create a company and issue its equity token (a company can have more than
   one). The token is a Token-2022 mint with on-chain metadata; the whole supply
@@ -38,12 +41,37 @@ is data in an account — changing it takes one transaction, not a reissue.
 - Show the live cap table and the transfer journal in the company panel, fed by
   an indexer: chain → worker → Postgres → API → event stream.
 
-Not in this version: the secondary market with offers (v0.2), vesting (v0.3),
-right of first refusal (v0.4), the compliance report (v0.5). The investor
-cabinet and the market screens in the panel are prototypes on mock data until
-then, and say so. Admission status is set by a person inside the product; there
-is no external KYC. The demo proves that the rule is enforced by the network,
-not where the status came from.
+New in v0.2.0 — a secondary market that checks the buyer before the match:
+
+- A holder offers shares at a fixed price per share, from the investor cabinet.
+  The shares are not escrowed: they stay in the seller's wallet, delegated to the
+  offer, one open offer per account. The seller can cancel at any time.
+- An offer is visible only to wallets that would pass admission for that token
+  right now — the same check the hook makes, mirrored by the index. Everyone else
+  sees an empty storefront.
+- Accepting takes the whole offer or part of it in one transaction: shares to
+  the buyer through the hook, payment to the seller, the platform fee to the fee
+  treasury — all of it or none of it. The form shows what the buyer pays, the fee
+  and what the seller receives before signing, computed with the same formula the
+  program charges.
+- A buyer whose admission is revoked after the offer was posted is refused by the
+  network before any balance moves.
+- An offer the seller's account no longer backs in full — shares moved away,
+  delegation withdrawn — is marked stale, with the reason and how much can still
+  be taken, on the storefront and in the company's book. The network would refuse
+  the excess anyway.
+- The company panel lists every offer of its tokens (open, filled, cancelled) and
+  shows each trade in the transfer journal with its price, payment and fee; both
+  update live.
+- The platform (fee in basis points, payment mint, fee treasury) is configured
+  once per deployment by an offline key. On devnet the fee is 100 bps and the
+  payment token is a demo stablecoin, `dUSD`.
+
+Not in this version: vesting (v0.3), right of first refusal (v0.4), the
+compliance report (v0.5). Admission status is set by a person inside the
+product; there is no external KYC. The demo proves that the rule is enforced by
+the network, not where the status came from. The payment token is a demo mint,
+not USDC.
 
 ## Roles
 
@@ -53,11 +81,12 @@ Roles are wallets, and they are separated in the program, not in the UI.
 |---|---|---|
 | **Admin** | create the company and the token, set the policy, assign roles, distribute from the treasury | change admission statuses |
 | **Compliance officer** | set, extend and revoke admission statuses in the registry | change the policy, issue or distribute tokens |
-| **Investor** | hold tokens, send them to another admitted wallet | receive without a valid admission |
+| **Investor** | hold tokens, send them to another admitted wallet, offer shares for sale, accept an offer | receive or buy without a valid admission, see offers of tokens it is not admitted to |
 
 One person can be admin and officer, with two different keys. The platform
-holds no keys: every state change is an on-chain instruction signed by the
-role's wallet in the browser. The API only reads the index and records
+holds no keys at runtime: every state change is an on-chain instruction signed
+by the role's wallet in the browser. The one key outside wallets is the
+platform authority, used once, offline, to set the fee and the payment mint. The API only reads the index and records
 simulation reports.
 
 ## Layout
@@ -73,7 +102,7 @@ apps/worker             follows the chain and fills the index
 apps/api                Hono: wallet sign-in, company reads, SSE feed, simulation reports
 apps/web                React panel: company wizard, policy, registry, distribute, cap table, journal
 apps/landing            the static landing page at the site root (no build, no JavaScript)
-tools/demo              the US1 story as a script, with the measurements behind the numbers below
+tools/demo              the US1 and US2 stories as scripts, with the measurements behind the numbers below
 fixtures                recorded transaction logs for the parser; the hook's account list, cross-checked between program and client
 scripts                 build, local validator, deploy and trace sweep (WSL)
 ```
@@ -142,6 +171,17 @@ stranger, sent without preflight, is refused by the network — and measures it:
 ```bash
 pnpm demo:us1                                                           # local validator
 pnpm demo:us1 -- --rpc devnet --payer <keypair.json> --api http://localhost:8787
+```
+
+The market story runs the same first half, then: an offer, a partial accept with
+the fee checked against what the chain charged, a buyer revoked after the offer
+refused before any balance moves, a cancel, a whole accept. The platform is set
+up once per deployment by its offline key, which also issues the demo stablecoin
+that pays the buyers:
+
+```bash
+pnpm demo:init-platform -- --authority <keypair.json>                   # once
+pnpm demo:us2 -- --authority <keypair.json>
 ```
 
 The exit code is the verdict.
@@ -222,7 +262,9 @@ Actions schedule (GitHub thins a `*/5` schedule out to once in hours):
   recipient's token account is created by whoever sends first — for a
   distribution that is the admin, about 0.002 SOL of rent.
 
-## Measured on devnet (v0.1.0)
+## Measured
+
+On devnet, v0.1.0:
 
 | | Budget | Measured |
 |---|---|---|
@@ -237,3 +279,19 @@ Actions schedule (GitHub thins a `*/5` schedule out to once in hours):
 Numbers come from `pnpm demo:us1 -- --rpc devnet --api …`; latencies are from
 the client's confirmation to the event on the panel's stream, p95 over 100
 transfers and 100 refusals.
+
+v0.2.0, the market and the hosting:
+
+| | Budget | Measured |
+|---|---|---|
+| Trades where one side moved without the other | 0 of 100, 20 broken on purpose | 0 (program tests) |
+| Offers matched to non-admitted buyers | 0 of 200, stopped before balances move | 0 (program tests) |
+| Fee shown before accepting = fee charged | equal | equal: quote = `OfferAccepted.fee` = the four balance moves, partial and whole (devnet) |
+| Cap table updated after confirmation, hosted | ≤ 5 s p95 | 0.74 s p95 |
+| Refusal in the journal, hosted | ≤ 5 s p95 | 0.80 s p95 |
+| End-to-end demo, hosted | ≤ 3 min | 22.6 s |
+| `accept_offer` compute | < 240 000 CU (its limit) | 98 000–120 000 CU on devnet |
+
+The hosted rows are `pnpm demo:us1 -- --rpc devnet --api https://caprail-api.onrender.com`,
+20 transfers and 20 refusals, on 3 October 2026; the market rows are
+`pnpm demo:us2 -- --rpc devnet --authority …` and `cargo test` (mollusk).
