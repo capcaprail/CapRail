@@ -51,6 +51,8 @@ CAPRAIL_ID="As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g"
 HOOK_ID="6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi"
 # Метадані programdata перед тілом програми (loader v3).
 PROGRAMDATA_HEADER=45
+# Найменше розширення programdata за один `solana program extend` (loader v3).
+EXTEND_MIN=10240
 LAMPORTS_PER_SOL=1000000000
 
 cd "$ROOT"
@@ -190,7 +192,10 @@ do_deploy() {
       need=$((need + $(rent_lamports "$data")))
     elif [[ "$len" -lt "$data" ]]; then
       echo "ПОМИЛКА: $program у мережі має programdata $len байтів, новий артефакт потребує $data —" >&2
-      echo "  solana program extend $id $((data - len)) --url $RPC -k $DEPLOYER" >&2
+      # Loader v3 extends by at least 10 KiB per call (or up to the maximum size).
+      local more=$((data - len))
+      [[ "$more" -lt "$EXTEND_MIN" ]] && more="$EXTEND_MIN"
+      echo "  solana program extend $id $more --url $RPC -k $DEPLOYER" >&2
       exit 1
     fi
   done
