@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./config": "./src/config.ts",
+    "./run": "./src/run.ts"
+  },
   "scripts": {
     "start": "node --env-file-if-exists=../../.env src/index.ts",
     "dev": "node --watch --env-file-if-exists=../../.env src/index.ts",

@@ -1,5 +1,7 @@
 import { createCaprailProgram } from '@caprail/chain'
 import { createDb, schema } from '@caprail/db'
+import { workerConfigFromEnv } from '@caprail/worker/config'
+import { startWorker, type Worker } from '@caprail/worker/run'
 import { serve } from '@hono/node-server'
 import { Connection } from '@solana/web3.js'
 import { desc } from 'drizzle-orm'
@@ -13,9 +15,17 @@ import { createLogger } from './logger.ts'
 import { chainPlatform } from './platform.ts'
 import type { IndexerCursor } from './routes/health.ts'
 
-function main(): void {
+async function main(): Promise<void> {
   const config = apiConfigFromEnv(process.env)
   const logger = createLogger(config.logLevel)
+  // Before the server binds: the platform's health check passes only once the index
+  // has caught up with the cursor, so a fresh instance never serves a stale index.
+  const worker: Worker | null = config.runWorker
+    ? await startWorker({
+        config: workerConfigFromEnv(process.env),
+        logger: logger.child({ component: 'worker' }),
+      })
+    : null
   const database = createDb(config.databaseUrl)
 
   const latestCursor = async (): Promise<IndexerCursor | null> => {
@@ -56,21 +66,32 @@ function main(): void {
     logger.info({ port: info.port }, 'api listening')
   })
 
-  // Railway sends SIGTERM on redeploy; without this the pool stays open until the
-  // pooler times it out, and the free tier has few connections to spare. The
-  // fallback timer covers a request that never finishes.
+  // The platform sends SIGTERM on redeploy; without this the pools stay open until
+  // the pooler times them out, and the free tier has few connections to spare. The
+  // worker stops first — a transaction it is applying finishes, nothing new starts.
+  // The fallback timer covers a request (an open SSE stream) that never finishes.
   for (const signal of ['SIGTERM', 'SIGINT'] as const) {
     process.once(signal, () => {
       logger.info({ signal }, 'shutting down')
       const forceExit = setTimeout(() => process.exit(1), 10_000)
-      server.close(() => {
-        void database.close().finally(() => {
+      void (worker?.stop() ?? Promise.resolve())
+        .catch((err: unknown) => logger.error({ err }, 'worker did not stop cleanly'))
+        .then(
+          () =>
+            new Promise<void>((resolve) => {
+              server.close(() => resolve())
+            }),
+        )
+        .then(() => database.close())
+        .finally(() => {
           clearTimeout(forceExit)
           process.exit(0)
         })
-      })
     })
   }
 }
 
-main()
+main().catch((err: unknown) => {
+  process.stderr.write(`api failed to start: ${err instanceof Error ? err.message : String(err)}\n`)
+  process.exit(1)
+})

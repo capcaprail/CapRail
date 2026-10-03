@@ -1,0 +1,48 @@
+# Render Blueprint: the api with the worker inside one free web service (the free plan
+# has no background workers). The owner creates it once — Render → New → Blueprint →
+# this repository — fills in the variables marked `sync: false`, and Render redeploys
+# on every push to main. Secrets live in the Render dashboard only.
+services:
+  - type: web
+    name: caprail-api
+    runtime: node
+    plan: free
+    # Next to Supabase (eu-central-1): every request and every indexed transaction is
+    # a round trip to the database.
+    region: frankfurt
+    branch: main
+    # pnpm from `packageManager`, not `corepack enable`: the Node 26 image keeps its own
+    # pnpm in a read-only /usr/bin, and Node 25+ no longer ships corepack.
+    buildCommand: npx -y pnpm@9.15.0 install --frozen-lockfile
+    # Node runs the TypeScript sources as they are; there is no build step.
+    startCommand: node apps/api/src/index.ts
+    # Answers only after the worker's first backfill, so a new instance never takes
+    # traffic with an index behind the chain.
+    healthCheckPath: /health
+    envVars:
+      # The version everything was measured on; 22 cannot load the Anchor client.
+      - key: NODE_VERSION
+        value: "26"
+      - key: RUN_WORKER
+        value: "true"
+      - key: LOG_LEVEL
+        value: info
+      # The demo stablecoin's label in quotes; it has no on-chain metadata.
+      - key: PAYMENT_SYMBOL
+        value: dUSD
+      # The Pages origin (scheme and host, no path), e.g. https://capcaprail.github.io
+      - key: WEB_ORIGIN
+        sync: false
+      # Supabase transaction pooler, port 6543.
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      # Helius devnet (https and wss); the key stays here, never in the panel's bundle.
+      - key: DEVNET_RPC_URL
+        sync: false
+      - key: DEVNET_WS_URL
+        sync: false
+      # Optional: a second node for backfill when the first refuses.
+      - key: DEVNET_RPC_FALLBACK_URL
+        sync: false

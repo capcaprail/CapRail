@@ -5,7 +5,7 @@
   "description": "Cap table on Solana: admission, vesting and ROFR enforced by the token itself",
   "packageManager": "pnpm@9.15.0",
   "engines": {
-    "node": ">=22"
+    "node": ">=26"
   },
   "type": "module",
   "scripts": {

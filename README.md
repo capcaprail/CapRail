@@ -82,7 +82,7 @@ scripts                 build, local validator, deploy and trace sweep (WSL)
 Both programs are deployed on devnet at the addresses in `packages/chain`
 (`As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g` and
 `6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi`). To run the panel you need
-nothing on chain — only Node 22+, pnpm 9.15, a Postgres database (a Supabase
+nothing on chain — only Node 26, pnpm 9.15, a Postgres database (a Supabase
 project works as is) and a devnet RPC endpoint.
 
 ```bash
@@ -165,6 +165,36 @@ Pages has no rewrites: a deep link is served `404.html`, which is a copy of the
 app shell, and the router takes over from there — the document status of such
 a load is 404, which is expected. Locally, `BASE_PATH=/<repo>/ pnpm --filter
 @caprail/web build` reproduces the Pages build.
+
+### The api and the worker on Render
+
+`render.yaml` is a Render Blueprint: one free web service runs the api with the
+worker inside it (`RUN_WORKER=true` — the free plan has no background workers),
+in Frankfurt next to the Supabase project. Once, in the Render dashboard:
+
+- **New → Blueprint →** this repository. Render reads `render.yaml`, generates
+  `JWT_SECRET`, and asks for the values marked `sync: false`: `DATABASE_URL`
+  (transaction pooler, `:6543`), `DEVNET_RPC_URL` and `DEVNET_WS_URL` (a keyed
+  devnet node — the key stays in Render, never in the panel's bundle),
+  `WEB_ORIGIN` (the Pages origin, `https://<owner>.github.io`), and optionally
+  `DEVNET_RPC_FALLBACK_URL`.
+- The service lives at `https://caprail-api.onrender.com` (or the name Render
+  gives it); that origin is the `VITE_API_URL` of the Pages build. Every push to
+  `main` redeploys it.
+- Run `pnpm --filter @caprail/db db:migrate` from a checkout **before** pushing a
+  commit that changes the schema: the service does not migrate on start.
+
+The process starts the worker first and binds the port after its first backfill,
+so `/health` answering means the index has caught up with the chain.
+
+A free service sleeps after 15 minutes without HTTP and takes about a minute to
+wake. Nothing is lost while it sleeps — the worker reads on from its cursor — but
+the first visitor waits. Keep it awake with an external monitor, not a GitHub
+Actions schedule (GitHub thins a `*/5` schedule out to once in hours):
+
+- **UptimeRobot** (free): a monitor of type HTTP(s) on
+  `https://<service>.onrender.com/health`, every 5 minutes. It also tells the
+  owner when the service is down.
 
 ## Wallets — what to know
 

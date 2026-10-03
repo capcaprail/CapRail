@@ -22,6 +22,13 @@ describe('apiConfigFromEnv', () => {
     expect(config.allowDirectDatabase).toBe(false)
   })
 
+  it('runs the worker in process only when asked to', () => {
+    expect(apiConfigFromEnv(base).runWorker).toBe(false)
+    expect(apiConfigFromEnv({ ...base, RUN_WORKER: 'true' }).runWorker).toBe(true)
+    expect(apiConfigFromEnv({ ...base, RUN_WORKER: '1' }).runWorker).toBe(true)
+    expect(apiConfigFromEnv({ ...base, RUN_WORKER: 'false' }).runWorker).toBe(false)
+  })
+
   it('splits several origins and coerces the port', () => {
     const config = apiConfigFromEnv({
       ...base,

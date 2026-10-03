@@ -33,6 +33,12 @@ export const apiConfigSchema = z
     // The label of the payment mint in quotes (`dUSD` on the demo). Not on chain —
     // the demo stablecoin has no metadata — and unset means the panel names the mint
     // by its address rather than by a symbol it might not be.
+    // The hosting runs the worker inside this process (one free web service, no
+    // background worker); locally it is its own process.
+    runWorker: z
+      .string()
+      .optional()
+      .transform((value) => value === 'true' || value === '1'),
     paymentSymbol: z
       .string()
       .trim()
@@ -57,5 +63,6 @@ export function apiConfigFromEnv(env: Record<string, string | undefined>): ApiCo
     webOrigins: env.WEB_ORIGIN,
     rpcUrl: env.DEVNET_RPC_URL,
     paymentSymbol: env.PAYMENT_SYMBOL,
+    runWorker: env.RUN_WORKER,
   })
 }

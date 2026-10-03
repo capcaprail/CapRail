@@ -35,6 +35,9 @@ importers:
       '@caprail/shared':
         specifier: workspace:^
         version: link:../../packages/shared
+      '@caprail/worker':
+        specifier: workspace:^
+        version: link:../worker
       '@hono/node-server':
         specifier: 1.19.17
         version: 1.19.17(hono@4.13.7)
