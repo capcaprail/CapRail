@@ -5,6 +5,12 @@ import { BrowserRouter } from 'react-router-dom'
 import { Providers } from './providers.tsx'
 import { AppRoutes } from './routes.tsx'
 import './index.css'
+import { legacyPath } from './legacy-path.ts'
+
+const moved = legacyPath(window.location.pathname, import.meta.env.BASE_URL)
+if (moved) {
+  window.history.replaceState(null, '', moved + window.location.search + window.location.hash)
+}
 
 const root = document.getElementById('root')
 if (!root) throw new Error('#root missing in index.html')

@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CapRail — share restrictions enforced by the token</title>
+<meta name="description" content="CapRail keeps a private company's cap table on Solana. Who may receive its shares is checked by the token itself, on every transfer. Devnet demo.">
+<link rel="canonical" href="https://capcaprail.github.io/CapRail/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="CapRail — the legend on your share certificate, enforced by the token">
+<meta property="og:description" content="A private company's cap table on Solana. Admission is checked by a Token-2022 transfer hook on every transfer. Devnet demo.">
+<meta property="og:url" content="https://capcaprail.github.io/CapRail/">
+<meta property="og:image" content="https://capcaprail.github.io/CapRail/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The CapRail mark and the line: the legend on your share certificate, enforced by the token.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#f5f4f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161714" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="wrap masthead">
+  <a class="brand" href="#top" aria-label="CapRail, top of the page">
+    <svg width="62" height="37" viewBox="290 570 1360 790" aria-hidden="true">
+      <path d="M313 965H1620M313 940V990M1620 940V990M683 595V1335M655 595H711M655 1335H711" stroke="currentColor" stroke-width="16" stroke-linecap="round" fill="none"/>
+      <path d="M683 770A193 193 0 0 0 876 965A193 193 0 0 0 683 1160A193 193 0 0 0 490 965A193 193 0 0 0 683 770Z" fill="currentColor"/>
+      <circle cx="1589" cy="626" r="38" fill="#c01800"/>
+    </svg>
+    <span>CapRail</span>
+  </a>
+  <nav aria-label="Main">
+    <a class="link" href="#reverse">The register</a>
+    <a class="link" href="#limits">What it does not do</a>
+    <a class="btn" href="app/">Open the register</a>
+  </nav>
+</header>
+
+<main>
+<section id="top" class="wrap obverse" aria-labelledby="headline">
+  <div class="cert">
+    <svg class="band" viewBox="0 0 1100 30" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <pattern id="guilloche" width="40" height="30" patternUnits="userSpaceOnUse">
+          <g fill="none" stroke="currentColor" stroke-width="0.8">
+            <path d="M0 15Q10 5 20 15T40 15"/>
+            <path d="M0 15Q10 25 20 15T40 15"/>
+            <path d="M0 15Q10 1 20 15T40 15"/>
+            <path d="M0 15Q10 29 20 15T40 15"/>
+            <path d="M-20 15Q-10 8 0 15T20 15T40 15T60 15"/>
+            <path d="M-20 15Q-10 22 0 15T20 15T40 15T60 15"/>
+          </g>
+        </pattern>
+      </defs>
+      <rect width="1100" height="30" fill="url(#guilloche)"/>
+    </svg>
+
+    <div class="cert-in">
+      <div class="overprint engraved" aria-hidden="true">Specimen</div>
+
+      <div class="cert-head">
+        <span class="engraved small muted">No. 000000 · Class A</span>
+        <span class="engraved title">CapRail · Restricted shares</span>
+        <span class="engraved small muted">Specimen</span>
+      </div>
+
+      <p class="specimen-line muted">A specimen. No company, no shares, no value.</p>
+      <h1 id="headline">The legend on your share certificate, enforced by the token.</h1>
+      <p class="lede">CapRail keeps a private company’s cap table on Solana. Who may receive its shares is checked by the token itself — a Token-2022 mint with a transfer hook — on every transfer, whichever app sends it. A transfer that fails the check does not happen.</p>
+
+      <p class="engraved legend-title" id="legend">Restrictive legend</p>
+      <ol class="legend" aria-labelledby="legend">
+        <li>
+          <span class="clause">1. These shares may be transferred only to a holder admitted by the company’s compliance officer.</span>
+          <span class="note"><span>Enforced. The hook refuses <span class="mono">NotAccredited</span>. Since v0.1.0.</span></span>
+        </li>
+        <li>
+          <span class="clause">2. An admission that has expired or been revoked admits nothing.</span>
+          <span class="note"><span>Enforced. <span class="mono">AccreditationExpired</span>; the next transfer after a revocation is refused.</span></span>
+        </li>
+        <li>
+          <span class="clause">3. Shares not yet vested may not be transferred.</span>
+          <span class="note not-yet"><span>Not yet. Vesting arrives with v0.3.0.</span></span>
+        </li>
+        <li>
+          <span class="clause">4. The company has a right of first refusal on any sale.</span>
+          <span class="note not-yet"><span>Not yet. ROFR arrives with v0.4.0; until then the policy refuses to switch it on.</span></span>
+        </li>
+      </ol>
+
+      <div class="cert-foot">
+        <div>
+          <div class="actions">
+            <a class="btn" href="app/">Open the register</a>
+            <a class="link" href="https://github.com/capcaprail/CapRail">Read the code</a>
+          </div>
+          <p class="demo-note muted">Devnet demo. Admission statuses are set by the compliance officer inside the product; there is no external KYC.</p>
+        </div>
+        <div class="seal" aria-hidden="true">
+          <svg class="rosette" aria-hidden="true" width="190" height="190" viewBox="-100 -100 200 200">
+            <g fill="none" stroke="currentColor" stroke-width="0.6">
+              <ellipse rx="92" ry="30"/><ellipse rx="92" ry="30" transform="rotate(15)"/><ellipse rx="92" ry="30" transform="rotate(30)"/><ellipse rx="92" ry="30" transform="rotate(45)"/><ellipse rx="92" ry="30" transform="rotate(60)"/><ellipse rx="92" ry="30" transform="rotate(75)"/><ellipse rx="92" ry="30" transform="rotate(90)"/><ellipse rx="92" ry="30" transform="rotate(105)"/><ellipse rx="92" ry="30" transform="rotate(120)"/><ellipse rx="92" ry="30" transform="rotate(135)"/><ellipse rx="92" ry="30" transform="rotate(150)"/><ellipse rx="92" ry="30" transform="rotate(165)"/>
+              <ellipse rx="66" ry="20" transform="rotate(7.5)"/><ellipse rx="66" ry="20" transform="rotate(22.5)"/><ellipse rx="66" ry="20" transform="rotate(37.5)"/><ellipse rx="66" ry="20" transform="rotate(52.5)"/><ellipse rx="66" ry="20" transform="rotate(67.5)"/><ellipse rx="66" ry="20" transform="rotate(82.5)"/><ellipse rx="66" ry="20" transform="rotate(97.5)"/><ellipse rx="66" ry="20" transform="rotate(112.5)"/><ellipse rx="66" ry="20" transform="rotate(127.5)"/><ellipse rx="66" ry="20" transform="rotate(142.5)"/><ellipse rx="66" ry="20" transform="rotate(157.5)"/><ellipse rx="66" ry="20" transform="rotate(172.5)"/>
+              <circle r="96"/><circle r="44"/>
+            </g>
+          </svg>
+          <svg class="mark" aria-hidden="true" width="96" height="56" viewBox="290 570 1360 790">
+            <path d="M313 965H1620M313 940V990M1620 940V990M683 595V1335M655 595H711M655 1335H711" stroke="currentColor" stroke-width="22" stroke-linecap="round" fill="none"/>
+            <path d="M683 770A193 193 0 0 0 876 965A193 193 0 0 0 683 1160A193 193 0 0 0 490 965A193 193 0 0 0 683 770Z" fill="currentColor"/>
+            <circle cx="1589" cy="626" r="52" fill="#c01800"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <svg class="band" viewBox="0 0 1100 30" preserveAspectRatio="none" aria-hidden="true">
+      <rect width="1100" height="30" fill="url(#guilloche)"/>
+    </svg>
+  </div>
+</section>
+
+<section class="wrap" aria-labelledby="bab">
+  <h2 id="bab">On paper, the legend is a promise. In CapRail, it is a check.</h2>
+  <div class="cols2 ruled">
+    <div>
+      <p class="kicker">Before</p>
+      <p>The shareholders’ agreement says “admitted investors only”. The certificate prints it. A wallet can still send the token to anyone, and the company finds out afterwards — if it finds out at all.</p>
+    </div>
+    <div>
+      <p class="kicker">After</p>
+      <p>The policy is data the token reads on every transfer. A transfer to a wallet the company has not admitted is refused by the network; balances on both sides stay as they were, and the refusal is in the company’s journal with its reason.</p>
+    </div>
+  </div>
+</section>
+
+<section id="reverse" class="reverse" aria-labelledby="reverse-title">
+  <div class="wrap">
+    <h2 class="engraved reverse-title" id="reverse-title">Reverse · Transfer register</h2>
+    <p class="reverse-sub muted">Five transactions on Solana devnet, 3 October 2026, from one run of the demo through the hosted panel. Each opens in the public explorer.</p>
+    <table class="ledger reg">
+      <caption class="muted" hidden>Transfer register, Solana devnet, 3 October 2026</caption>
+      <thead>
+        <tr><th scope="col" class="when">When (UTC)</th><th scope="col">Entry</th><th class="dr" aria-hidden="true"></th><th scope="col" class="fig">Shares</th><th scope="col" class="out">Outcome</th><th scope="col" class="sig">Signature</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td data-l="When (UTC)">14:37:49</td><td class="k">Treasury → alice, distribution</td><td class="dr"></td><td class="fig" data-l="Shares">100,000 DEMO</td><td class="muted" data-l="Outcome">settled</td>
+          <td data-l="Signature"><a class="mono" href="https://explorer.solana.com/tx/WnYV9a9T9UmoN5jq5UAoyPpK9TYmM6a9HDL2N1aWzoyE9P4ae1m5AhnZtNavLTC4pNAAbWTJE5v8CnCcEeupuUV?cluster=devnet" aria-label="Distribution transaction in the Solana explorer">WnYV…puUV</a></td>
+        </tr>
+        <tr>
+          <td data-l="When (UTC)">14:37:55</td><td class="k">alice → bob, both admitted</td><td class="dr"></td><td class="fig" data-l="Shares">10 DEMO</td><td class="muted" data-l="Outcome">settled</td>
+          <td data-l="Signature"><a class="mono" href="https://explorer.solana.com/tx/4k1mNPGwo6AUeaa3wcm8DDbct9CZQ3Kt38DTNwFmSbANtuQXiPfEdZTccU1hHyK6yva4wS9auz8D9MZn7QZqwzkV?cluster=devnet" aria-label="Settled transfer in the Solana explorer">4k1m…zqkV</a></td>
+        </tr>
+        <tr>
+          <td data-l="When (UTC)">14:38:01</td><td class="k">alice → a wallet nobody admitted</td><td class="dr"></td><td class="fig" data-l="Shares">10 DEMO</td><td data-l="Outcome"><span class="stamp"><b>REFUSED</b><i>NotAccredited</i></span></td>
+          <td data-l="Signature"><a class="mono" href="https://explorer.solana.com/tx/3R5ADZWV6pJVyymQny3D4fjaR9EaZT36yWL8jgaqGrfWrXgkCjinW3bVS9NYceMLhqZspV7bq7oXG255L81Nmtwk?cluster=devnet" aria-label="Refused transfer in the Solana explorer">3R5A…mtwk</a></td>
+        </tr>
+        <tr>
+          <td data-l="When (UTC)">14:38:19</td><td class="k">alice → bob, an accepted offer: 1.25 dUSD per share, fee 1.875 dUSD out of 187.5 paid</td><td class="dr"></td><td class="fig" data-l="Shares">150 DEMO</td><td class="muted" data-l="Outcome">settled · trade</td>
+          <td data-l="Signature"><a class="mono" href="https://explorer.solana.com/tx/2ui7cKipezeNgfRUky3F27yKZAwMPxFwWdxnhXdjiZUfqMVDharyjNv1dHkcgcjCMbRHueAaRxy5iU7brM87ARqb?cluster=devnet" aria-label="Trade in the Solana explorer">2ui7…ARqb</a></td>
+        </tr>
+        <tr>
+          <td data-l="When (UTC)">14:38:25</td><td class="k">A buyer whose admission was revoked tries the same offer</td><td class="dr"></td><td class="fig muted" data-l="Shares">—</td><td data-l="Outcome"><span class="stamp"><b>REFUSED</b><i>NotAccredited</i></span></td>
+          <td data-l="Signature"><a class="mono" href="https://explorer.solana.com/tx/2FqyH3wr3UCiCAEyrk8NjvMiLKceAqsbfySNAADYrwgDyewnGiCo1g4fmgQAsBiXsbPbUv3Qv5JmyBwHSz1bkVxF?cluster=devnet" aria-label="Refused offer acceptance in the Solana explorer">2Fqy…5mcw</a></td>
+        </tr>
+        <tr class="blank" aria-hidden="true"><td></td><td></td><td class="dr"></td><td></td><td></td><td></td></tr>
+        <tr class="blank" aria-hidden="true"><td></td><td></td><td class="dr"></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <p class="reverse-note muted">“alice”, “bob”: disposable keys of the demo. The refused transactions were sent without the wallet’s simulation on purpose, so that the refusal is recorded on chain for anyone to see; a wallet that simulates first stops before signing, and the panel records that refusal as “simulation”.</p>
+  </div>
+</section>
+
+<section class="wrap" aria-labelledby="does">
+  <h2 id="does">What it does</h2>
+  <div class="cols3 ruled">
+    <div>
+      <h3>Admission is a property of the token</h3>
+      <p>A compliance officer admits a wallet, with an expiry. The token’s transfer hook reads that record on every transfer and refuses anything else. A changed policy or status applies to the next transfer — no reissue, nothing for holders to do.</p>
+    </div>
+    <div>
+      <h3>The cap table is read from the chain</h3>
+      <p>Holders, amounts and shares of the issue update from the transactions themselves; every attempt, settled or refused, is in the company’s journal with its reason, time and parties.</p>
+    </div>
+    <div>
+      <h3>A market that checks the buyer first</h3>
+      <p>A holder offers shares at a fixed price; only wallets that would pass admission see the offer. Shares and payment move in one transaction, or neither does, and the platform fee is shown before accepting.</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" aria-labelledby="measured">
+  <h2 id="measured">Measured</h2>
+  <table class="ledger meas">
+    <thead>
+      <tr><th scope="col">What</th><th class="dr" aria-hidden="true"></th><th scope="col" class="fig">Budget</th><th scope="col" class="fig">Measured</th><th scope="col" class="when">Where, when</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="k">Transfers to a non-admitted wallet refused, balances unchanged</td><td class="dr"></td><td class="fig muted" data-l="Budget">100 of 100</td><td class="fig value" data-l="Measured">100 of 100</td><td class="muted" data-l="Where, when">devnet, v0.1.0, Sep 2026</td></tr>
+      <tr><td class="k">Transfers between admitted investors pass first time</td><td class="dr"></td><td class="fig muted" data-l="Budget">≥ 99 of 100</td><td class="fig value" data-l="Measured">100 of 100</td><td class="muted" data-l="Where, when">devnet, v0.1.0, Sep 2026</td></tr>
+      <tr><td class="k">Cap table shows a confirmed transfer (p95)</td><td class="dr"></td><td class="fig muted" data-l="Budget">≤ 5 s</td><td class="fig value" data-l="Measured">0.74 s</td><td class="muted" data-l="Where, when">hosted panel on devnet, 20 transfers, 3 Oct 2026</td></tr>
+      <tr><td class="k">Refusal in the journal with its reason (p95)</td><td class="dr"></td><td class="fig muted" data-l="Budget">≤ 5 s</td><td class="fig value" data-l="Measured">0.80 s</td><td class="muted" data-l="Where, when">same run</td></tr>
+      <tr><td class="k">Whole demo, company to updated cap table</td><td class="dr"></td><td class="fig muted" data-l="Budget">≤ 3 min</td><td class="fig value" data-l="Measured">22.6 s</td><td class="muted" data-l="Where, when">same run</td></tr>
+      <tr><td class="k">Network fee of a compliant transfer, for the sender</td><td class="dr"></td><td class="fig muted" data-l="Budget">≤ 0.001 SOL</td><td class="fig value" data-l="Measured">0.000005 SOL</td><td class="muted" data-l="Where, when">devnet, 20 transfers, 3 Oct 2026</td></tr>
+      <tr><td class="k">Trades where one side moved without the other</td><td class="dr"></td><td class="fig muted" data-l="Budget">0 of 100, 20 broken on purpose</td><td class="fig value" data-l="Measured">0</td><td class="muted" data-l="Where, when">program tests</td></tr>
+      <tr><td class="k">Offers matched to non-admitted buyers</td><td class="dr"></td><td class="fig muted" data-l="Budget">0 of 200</td><td class="fig value" data-l="Measured">0</td><td class="muted" data-l="Where, when">program tests</td></tr>
+      <tr><td class="k muted">Not measured yet: vesting (v0.3.0), the period report (v0.5.0)</td><td class="dr"></td><td class="fig muted" data-l="Budget"></td><td class="fig muted" data-l="Measured">—</td><td class="muted" data-l="Where, when"></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="limits" class="wrap" aria-labelledby="limits-title">
+  <h2 id="limits-title">What CapRail does not do</h2>
+  <ul class="limits">
+    <li><strong>It does not verify anyone’s accreditation.</strong> The compliance officer sets admission inside the product; there is no KYC or KYB provider, and the demo does not prove that a status matches a real person.</li>
+    <li><strong>It does not issue or sell shares, or wrap them legally.</strong> No offering, no SPV, no shareholders’ agreement, no trading-venue licence. It enforces rules the company has already agreed.</li>
+    <li><strong>It does not enforce vesting or a right of first refusal yet</strong> (v0.3.0, v0.4.0), and it does not produce the period report yet (v0.5.0). Jurisdiction and investor type are recorded, not enforced.</li>
+    <li><strong>It does not hold your shares.</strong> An offer is a delegation, not escrow: a seller who moves the shares away leaves the offer standing, and the market marks it stale with the reason.</li>
+    <li><strong>It runs on Solana devnet only.</strong> The payment token is a demo stablecoin, not USDC.</li>
+    <li><strong>Not every wallet can send these tokens yet.</strong> A wallet that does not add the transfer hook’s accounts fails before the check runs — nothing moves, but nothing is sent either.</li>
+  </ul>
+</section>
+
+<section class="wrap" aria-labelledby="faq">
+  <h2 id="faq">Questions</h2>
+  <dl class="cols2 ruled">
+    <div><dt>What stops someone from sending the token outside your app?</dt><dd>Nothing in the app — the check is in the token. Token-2022 calls the transfer hook on every transfer of this mint, from any program or wallet.</dd></div>
+    <div><dt>Who decides who is admitted?</dt><dd>The company’s compliance officer, with their own key. The administrator cannot change admission statuses.</dd></div>
+    <div><dt>Can I bring a token I already issued?</dt><dd>No. The policy is attached when the token is created; tokens issued elsewhere are out of scope.</dd></div>
+    <div><dt>Is this on mainnet?</dt><dd>No. Everything runs on Solana devnet; going to mainnet is a separate decision.</dd></div>
+  </dl>
+</section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <span class="muted">CapRail — cap table of a private company on Solana. Devnet demo.</span>
+    <nav aria-label="Footer">
+      <a href="https://github.com/capcaprail/CapRail">Source</a>
+      <a href="https://github.com/capcaprail/CapRail/issues">Questions and issues</a>
+      <a href="app/">Open the register</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

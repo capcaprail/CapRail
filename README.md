@@ -72,6 +72,7 @@ packages/shared         schemas shared by API and web
 apps/worker             follows the chain and fills the index
 apps/api                Hono: wallet sign-in, company reads, SSE feed, simulation reports
 apps/web                React panel: company wizard, policy, registry, distribute, cap table, journal
+apps/landing            the static landing page at the site root (no build, no JavaScript)
 tools/demo              the US1 story as a script, with the measurements behind the numbers below
 fixtures                recorded transaction logs for the parser; the hook's account list, cross-checked between program and client
 scripts                 build, local validator, deploy and trace sweep (WSL)
@@ -145,26 +146,31 @@ pnpm demo:us1 -- --rpc devnet --payer <keypair.json> --api http://localhost:8787
 
 The exit code is the verdict.
 
-### The panel on GitHub Pages
+### The site on GitHub Pages
 
-`.github/workflows/pages.yml` builds `apps/web` on every push to `main` and
-publishes it as a project site at `https://<owner>.github.io/<repo>/`. The api
-and the worker are not static and are hosted separately; the panel reaches the
-api through `VITE_API_URL`. Once, in the repository settings:
+`.github/workflows/pages.yml` publishes a project site on every push to `main`:
+the landing page (`apps/landing`, copied as is) at `https://<owner>.github.io/<repo>/`
+and the panel (`apps/web`, built) under `https://<owner>.github.io/<repo>/app/`.
+The api and the worker are not static and are hosted separately; the panel
+reaches the api through `VITE_API_URL`. Once, in the repository settings:
 
 - **Settings → Pages → Build and deployment → Source: GitHub Actions.**
 - **Settings → Secrets and variables → Actions → Variables:** `VITE_API_URL`
   (required — the api's public origin; the build fails without it),
   `VITE_DEVNET_RPC_URL` (optional; the node the panel sends transactions to —
   it is public in the bundle, so no key; default: the public devnet node),
-  `PAGES_BASE_PATH` = `/` only for a custom domain.
+  `PAGES_BASE_PATH` = `/app/` only for a custom domain (the panel's base; the
+  landing is always the site root).
 - On the api, `WEB_ORIGIN` must include the Pages origin
   (`https://<owner>.github.io`), or the browser blocks every request with CORS.
 
-Pages has no rewrites: a deep link is served `404.html`, which is a copy of the
-app shell, and the router takes over from there — the document status of such
-a load is 404, which is expected. Locally, `BASE_PATH=/<repo>/ pnpm --filter
-@caprail/web build` reproduces the Pages build.
+Pages has no rewrites and serves a custom 404 only from the site root: a deep
+link into the panel is served the root `404.html`, which is a copy of the panel's
+shell, and the router takes over from there — the document status of such a load
+is 404, which is expected. Links from before the panel moved under `app/`
+(`/<repo>/company/…`, `/<repo>/market`) reach the same shell, and the panel moves
+them under `app/` before its router starts. Locally, `BASE_PATH=/<repo>/app/ pnpm
+--filter @caprail/web build` reproduces the Pages build of the panel.
 
 ### The api and the worker on Render
 

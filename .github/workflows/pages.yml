@@ -1,8 +1,10 @@
 name: Pages
 
-# Deploys apps/web to GitHub Pages on every push to main. The api and the worker
-# are processes with a database connection and an RPC key — they are hosted
-# elsewhere, and the panel reaches the api through VITE_API_URL.
+# Deploys the site to GitHub Pages on every push to main: the landing page
+# (apps/landing, static, no build) at the root and the panel (apps/web) under
+# app/. The api and the worker are processes with a database connection and an
+# RPC key — they are hosted elsewhere, and the panel reaches the api through
+# VITE_API_URL.
 #
 # Repository settings, once (Settings → Pages: Source = GitHub Actions;
 # Settings → Secrets and variables → Actions → Variables):
@@ -10,8 +12,9 @@ name: Pages
 #   VITE_DEVNET_RPC_URL   optional — the node the panel sends transactions to;
 #                         it is public in the bundle, so no key here (default:
 #                         the public devnet node)
-#   PAGES_BASE_PATH       optional — `/` for a custom domain; a project site
-#                         lives under /<repo>/ and needs nothing
+#   PAGES_BASE_PATH       optional — the panel's base; `/app/` for a custom
+#                         domain. A project site serves the panel under
+#                         /<repo>/app/ and needs nothing
 # The api must list the Pages origin in WEB_ORIGIN, or the browser blocks every
 # request with CORS.
 
@@ -60,18 +63,24 @@ jobs:
       - name: Build the web
         run: pnpm --filter @caprail/web build
         env:
-          BASE_PATH: ${{ vars.PAGES_BASE_PATH || format('/{0}/', github.event.repository.name) }}
+          BASE_PATH: ${{ vars.PAGES_BASE_PATH || format('/{0}/app/', github.event.repository.name) }}
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_DEVNET_RPC_URL: ${{ vars.VITE_DEVNET_RPC_URL || 'https://api.devnet.solana.com' }}
 
-      # Pages has no rewrites: an unknown path is served 404.html, and a copy of
-      # the app shell there lets the router take over on a deep link.
-      - name: SPA fallback
-        run: cp apps/web/dist/index.html apps/web/dist/404.html
+      # The landing at the root, the panel under app/. Pages has no rewrites and
+      # serves a custom 404 only from the site root, so the root 404.html is the
+      # panel's shell: a deep link (and an old link from before app/, which the
+      # panel moves under app/ itself) lands in the router.
+      - name: Assemble the site
+        run: |
+          mkdir site
+          cp -r apps/landing/. site/
+          cp -r apps/web/dist site/app
+          cp apps/web/dist/index.html site/404.html
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/web/dist
+          path: site
 
   deploy:
     needs: build

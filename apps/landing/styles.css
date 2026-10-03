@@ -1,0 +1,644 @@
+/* CapRail landing — a specimen share certificate, then its reverse: the transfer register.
+   Two inks and a seal: ink for text, a ledger green-grey tint for the guilloché and rules,
+   the logo's red only for the seal, the refusal stamps and the "not yet" notes. */
+
+:root {
+  --ground: #f5f4f0;
+  --ground-2: #efeee8;
+  --ink: #1c1e1a;
+  --muted: #5f635a;
+  --tint: #9aa595;
+  --rule: #cfd8cc;
+  --seal: #c01800;
+  --sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --engraved: Cinzel, "Trajan Pro", Georgia, serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #161714;
+    --ground-2: #1c1d19;
+    --ink: #e8e6df;
+    --muted: #a4a79e;
+    --tint: #5e6858;
+    --rule: #33382f;
+    --seal: #e0472f;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+a {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--muted);
+}
+
+a:focus-visible,
+.btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-inline: 40px;
+}
+
+.engraved {
+  font-family: var(--engraved);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.mono {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 22px;
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 16px;
+}
+
+.btn:hover {
+  background: var(--ink);
+  color: var(--ground);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 16px;
+}
+
+/* ── masthead ─────────────────────────────────────────────────────────────── */
+
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-block: 22px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  font-size: 19px;
+  letter-spacing: 0.02em;
+}
+
+.masthead nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+/* ── obverse: the certificate ─────────────────────────────────────────────── */
+
+.obverse {
+  padding-top: 8px;
+  padding-bottom: 72px;
+}
+
+.cert {
+  border: 1px solid var(--tint);
+  color: var(--tint);
+}
+
+.band {
+  display: block;
+  width: 100%;
+  height: 30px;
+}
+
+.cert-in {
+  position: relative;
+  overflow: hidden;
+  margin: 0 30px;
+  padding: 44px 56px 40px;
+  border-inline: 1px solid var(--tint);
+  color: var(--ink);
+}
+
+.overprint {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%) rotate(-14deg);
+  font-size: 168px;
+  font-weight: 700;
+  color: var(--tint);
+  opacity: 0.16;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.cert-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding-bottom: 18px;
+  border-bottom: 4px double var(--tint);
+  margin-bottom: 36px;
+}
+
+.cert-head .small {
+  font-size: 13px;
+}
+
+.cert-head .title {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.specimen-line {
+  margin: 0 0 18px;
+  font-size: 14px;
+}
+
+h1 {
+  margin: 0 0 22px;
+  max-width: 900px;
+  font-size: 52px;
+  line-height: 1.12;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.lede {
+  margin: 0 0 40px;
+  max-width: 760px;
+  font-size: 19px;
+}
+
+.legend-title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.legend {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  column-gap: 40px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend li {
+  display: contents;
+}
+
+.clause,
+.note {
+  padding-block: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.clause {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+
+.note {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.note > span {
+  display: block;
+  padding-left: 16px;
+  border-left: 1px solid var(--tint);
+}
+
+.note.not-yet {
+  color: var(--seal);
+}
+
+.note.not-yet > span {
+  border-left-color: var(--seal);
+}
+
+.cert-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 32px;
+  margin-top: 40px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.demo-note {
+  margin: 16px 0 0;
+  max-width: 520px;
+  font-size: 14px;
+}
+
+.seal {
+  position: relative;
+  flex: none;
+  width: 190px;
+  height: 190px;
+  color: var(--tint);
+}
+
+.seal svg {
+  position: absolute;
+}
+
+.seal .rosette {
+  inset: 0;
+}
+
+/* The star of the mark sits on the rosette's centre; the rail runs out to the right. */
+.seal .mark {
+  left: 67px;
+  top: 67px;
+  color: var(--ink);
+}
+
+/* ── sections ─────────────────────────────────────────────────────────────── */
+
+section {
+  padding-bottom: 88px;
+}
+
+h2 {
+  margin: 0 0 20px;
+  font-size: 30px;
+  line-height: 1.25;
+  font-weight: 400;
+}
+
+h3 {
+  margin: 0 0 10px;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.ruled {
+  border-top: 1px solid var(--rule);
+  padding-top: 22px;
+}
+
+.cols2,
+.cols3 {
+  display: grid;
+  column-gap: 56px;
+}
+
+.cols2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cols3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 40px;
+}
+
+.cols2 p,
+.cols3 p {
+  margin: 0;
+}
+
+.cols2 .kicker {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ── reverse: the register ───────────────────────────────────────────────── */
+
+.reverse {
+  padding: 72px 0 80px;
+  margin-bottom: 80px;
+  background: var(--ground-2);
+  border-block: 1px solid var(--tint);
+}
+
+.reverse-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.reverse-sub {
+  margin: 0 0 32px;
+  max-width: 760px;
+}
+
+/* Ledger tables: description columns, the double vertical rule, figures. */
+.ledger {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ledger th,
+.ledger td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  vertical-align: top;
+  font-weight: 400;
+}
+
+.ledger thead th {
+  font-size: 12px;
+  color: var(--muted);
+  border-bottom-color: var(--tint);
+}
+
+.ledger .dr {
+  width: 3px;
+  padding: 0;
+  border-inline: 1px solid var(--tint);
+}
+
+.ledger .fig {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ledger tr.blank td {
+  height: 50px;
+}
+
+.reg .when {
+  width: 96px;
+}
+
+.reg .out {
+  width: 210px;
+}
+
+.reg .sig {
+  width: 120px;
+}
+
+.stamp {
+  display: inline-block;
+  padding: 4px 8px;
+  border: 1.5px solid var(--seal);
+  border-radius: 3px;
+  color: var(--seal);
+  line-height: 1.2;
+  transform: rotate(-4deg);
+}
+
+.stamp b {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.stamp i {
+  display: block;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.reverse-note {
+  margin: 22px 0 0;
+  max-width: 820px;
+  font-size: 14px;
+}
+
+.meas td.value {
+  font-size: 18px;
+}
+
+.meas .when {
+  width: 260px;
+}
+
+/* ── limits, questions, footer ───────────────────────────────────────────── */
+
+.limits {
+  max-width: 900px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--rule);
+}
+
+.limits li {
+  padding-block: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.limits strong,
+dt {
+  font-weight: 600;
+}
+
+dl.cols2 {
+  margin: 0;
+  row-gap: 28px;
+}
+
+dt {
+  margin-bottom: 6px;
+}
+
+dd {
+  margin: 0;
+}
+
+.site-foot {
+  border-top: 1px solid var(--tint);
+}
+
+.site-foot .wrap {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding-top: 28px;
+  padding-bottom: 40px;
+  font-size: 14px;
+}
+
+.site-foot nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+/* ── narrow screens ──────────────────────────────────────────────────────── */
+
+@media (max-width: 760px) {
+  body {
+    font-size: 16px;
+  }
+
+  .wrap {
+    padding-inline: 16px;
+  }
+
+  .masthead nav .link {
+    display: none;
+  }
+
+  .band {
+    height: 16px;
+  }
+
+  .cert-in {
+    margin: 0 10px;
+    padding: 28px 18px;
+  }
+
+  .overprint {
+    font-size: 64px;
+  }
+
+  h1 {
+    font-size: 32px;
+  }
+
+  .lede {
+    font-size: 17px;
+  }
+
+  .legend,
+  .cols2,
+  .cols3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .legend .note {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .cols3 > div + div,
+  .cols2 > div + div {
+    margin-top: 24px;
+  }
+
+  .seal {
+    width: 120px;
+    height: 120px;
+  }
+
+  .seal .rosette {
+    width: 120px;
+    height: 120px;
+  }
+
+  .cert-head .title {
+    font-size: 17px;
+    letter-spacing: 0.08em;
+  }
+
+  .seal .mark {
+    left: 43px;
+    top: 43px;
+    width: 60px;
+    height: 35px;
+  }
+
+  /* Ledger tables stack: one entry per block, label left, value right. */
+  .ledger thead {
+    display: none;
+  }
+
+  .ledger,
+  .ledger tbody,
+  .ledger tr,
+  .ledger td {
+    display: block;
+    width: auto;
+  }
+
+  .ledger tr {
+    padding-block: 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .ledger td {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 4px 0;
+    border: 0;
+    text-align: right;
+  }
+
+  .ledger td::before {
+    content: attr(data-l);
+    color: var(--muted);
+    font-size: 12px;
+    text-align: left;
+    flex: none;
+  }
+
+  .ledger td.k {
+    display: block;
+    text-align: left;
+  }
+
+  .ledger td.k::before {
+    content: none;
+  }
+
+  .ledger .dr,
+  .ledger tr.blank {
+    display: none;
+  }
+
+  .ledger .fig {
+    white-space: normal;
+  }
+}
