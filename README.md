@@ -295,3 +295,7 @@ v0.2.0, the market and the hosting:
 The hosted rows are `pnpm demo:us1 -- --rpc devnet --api https://caprail-api.onrender.com`,
 20 transfers and 20 refusals, on 3 October 2026; the market rows are
 `pnpm demo:us2 -- --rpc devnet --authority …` and `cargo test` (mollusk).
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).

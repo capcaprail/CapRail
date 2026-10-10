@@ -2,6 +2,7 @@
   "name": "caprail",
   "version": "0.0.0",
   "private": true,
+  "license": "Apache-2.0",
   "description": "Cap table on Solana: admission, vesting and ROFR enforced by the token itself",
   "packageManager": "pnpm@9.15.0",
   "engines": {
