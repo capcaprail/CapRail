@@ -13,6 +13,7 @@ pub mod events;
 pub mod hook;
 pub mod instructions;
 pub mod state;
+pub mod vesting;
 
 pub use errors::CaprailError;
 use instructions::*;
