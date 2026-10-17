@@ -126,6 +126,22 @@ pub struct OfferCancelled {
     pub cancelled_at: i64,
 }
 
+// The schedule travels in full so the index can show vested and unvested
+// without reading the account; the tokens themselves are journaled by the
+// hook as a `TransferAllowed` from the treasury in the same transaction.
+#[event]
+pub struct GrantCreated {
+    pub grant: Pubkey,
+    pub company: Pubkey,
+    pub mint: Pubkey,
+    pub wallet: Pubkey,
+    pub total: u64,
+    pub start_at: i64,
+    pub cliff_at: i64,
+    pub end_at: i64,
+    pub created_at: i64,
+}
+
 // Угода — прийняття цілком або частково. Сторони й суми тут цілком, щоб індекс
 // поклав рядок у `trades`, а cap table позначив частку покупця джерелом
 // «покупка», не дочитуючи транзакцію; сам переказ частки журнал бачить ще й

@@ -71,6 +71,12 @@ pub mod caprail {
         instructions::distribute_handler(ctx, amount)
     }
 
+    // A vesting grant: the record and the whole `total` from the treasury,
+    // through the hook like any other transfer.
+    pub fn create_grant(ctx: Context<CreateGrant>, args: CreateGrantArgs) -> Result<()> {
+        instructions::create_grant_handler(ctx, args)
+    }
+
     // Пропозиція продажу без ескроу: `Offer` PDA стає делегатом рахунку
     // продавця на всю кількість.
     pub fn create_offer(ctx: Context<CreateOffer>, args: CreateOfferArgs) -> Result<()> {

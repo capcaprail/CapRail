@@ -55,4 +55,6 @@ pub enum CaprailError {
     AmountExceedsRemaining,
     #[msg("seller's account no longer backs this offer: delegation or balance is short")]
     OfferStale,
+    #[msg("grant schedule needs start <= cliff <= end and start < end")]
+    InvalidGrant,
 }

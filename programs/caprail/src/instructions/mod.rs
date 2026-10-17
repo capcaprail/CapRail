@@ -8,6 +8,7 @@
 pub mod accept_offer;
 pub mod cancel_offer;
 pub mod create_company;
+pub mod create_grant;
 pub mod create_offer;
 pub mod create_token;
 pub mod distribute;
@@ -19,6 +20,7 @@ pub mod set_roles;
 pub use accept_offer::*;
 pub use cancel_offer::*;
 pub use create_company::*;
+pub use create_grant::*;
 pub use create_offer::*;
 pub use create_token::*;
 pub use distribute::*;

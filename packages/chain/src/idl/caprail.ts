@@ -459,6 +459,228 @@ export type Caprail = {
       ]
     },
     {
+      "name": "createGrant",
+      "discriminator": [
+        19,
+        119,
+        176,
+        223,
+        45,
+        142,
+        225,
+        156
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "company"
+          ]
+        },
+        {
+          "name": "company",
+          "relations": [
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "tokenConfig"
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "treasury",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "company"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "recipient"
+        },
+        {
+          "name": "recipientTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "recipient"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "grant",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  114,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              },
+              {
+                "kind": "account",
+                "path": "recipient"
+              }
+            ]
+          }
+        },
+        {
+          "name": "extraAccountMetaList"
+        },
+        {
+          "name": "stateProgram",
+          "address": "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g"
+        },
+        {
+          "name": "investorRecord"
+        },
+        {
+          "name": "sourceGrant"
+        },
+        {
+          "name": "transferPermit"
+        },
+        {
+          "name": "hookProgram",
+          "address": "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "createGrantArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "createOffer",
       "discriminator": [
         237,
@@ -1260,6 +1482,19 @@ export type Caprail = {
       ]
     },
     {
+      "name": "grant",
+      "discriminator": [
+        161,
+        166,
+        11,
+        205,
+        204,
+        135,
+        205,
+        54
+      ]
+    },
+    {
       "name": "investorRecord",
       "discriminator": [
         170,
@@ -1324,6 +1559,19 @@ export type Caprail = {
         83,
         112,
         99
+      ]
+    },
+    {
+      "name": "grantCreated",
+      "discriminator": [
+        162,
+        254,
+        131,
+        56,
+        65,
+        214,
+        85,
+        6
       ]
     },
     {
@@ -1564,6 +1812,11 @@ export type Caprail = {
       "code": 6023,
       "name": "offerStale",
       "msg": "seller's account no longer backs this offer: delegation or balance is short"
+    },
+    {
+      "code": 6024,
+      "name": "invalidGrant",
+      "msg": "grant schedule needs start <= cliff <= end and start < end"
     }
   ],
   "types": [
@@ -1653,6 +1906,30 @@ export type Caprail = {
       }
     },
     {
+      "name": "createGrantArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "total",
+            "type": "u64"
+          },
+          {
+            "name": "startAt",
+            "type": "i64"
+          },
+          {
+            "name": "cliffAt",
+            "type": "i64"
+          },
+          {
+            "name": "endAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "createOfferArgs",
       "type": {
         "kind": "struct",
@@ -1704,6 +1981,86 @@ export type Caprail = {
                 "name": "transferPolicy"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "grant",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "total",
+            "type": "u64"
+          },
+          {
+            "name": "startAt",
+            "type": "i64"
+          },
+          {
+            "name": "cliffAt",
+            "type": "i64"
+          },
+          {
+            "name": "endAt",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "grantCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "grant",
+            "type": "pubkey"
+          },
+          {
+            "name": "company",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "total",
+            "type": "u64"
+          },
+          {
+            "name": "startAt",
+            "type": "i64"
+          },
+          {
+            "name": "cliffAt",
+            "type": "i64"
+          },
+          {
+            "name": "endAt",
+            "type": "i64"
+          },
+          {
+            "name": "createdAt",
+            "type": "i64"
           }
         ]
       }
@@ -2806,6 +3163,228 @@ export const IDL: Caprail = {
       ]
     },
     {
+      "name": "createGrant",
+      "discriminator": [
+        19,
+        119,
+        176,
+        223,
+        45,
+        142,
+        225,
+        156
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "company"
+          ]
+        },
+        {
+          "name": "company",
+          "relations": [
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "tokenConfig"
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "tokenConfig"
+          ]
+        },
+        {
+          "name": "treasury",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "company"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "recipient"
+        },
+        {
+          "name": "recipientTokenAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "recipient"
+              },
+              {
+                "kind": "account",
+                "path": "tokenProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "grant",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  114,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              },
+              {
+                "kind": "account",
+                "path": "recipient"
+              }
+            ]
+          }
+        },
+        {
+          "name": "extraAccountMetaList"
+        },
+        {
+          "name": "stateProgram",
+          "address": "As8C4JwSGHd7HPvh5KD1FhhLsQphQ8veSdhipiSRWs7g"
+        },
+        {
+          "name": "investorRecord"
+        },
+        {
+          "name": "sourceGrant"
+        },
+        {
+          "name": "transferPermit"
+        },
+        {
+          "name": "hookProgram",
+          "address": "6EMZVfUkf2wrtwfnESLghWfdWyzDu71uJTJ7dCKG3YEi"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "createGrantArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "createOffer",
       "discriminator": [
         237,
@@ -3607,6 +4186,19 @@ export const IDL: Caprail = {
       ]
     },
     {
+      "name": "grant",
+      "discriminator": [
+        161,
+        166,
+        11,
+        205,
+        204,
+        135,
+        205,
+        54
+      ]
+    },
+    {
       "name": "investorRecord",
       "discriminator": [
         170,
@@ -3671,6 +4263,19 @@ export const IDL: Caprail = {
         83,
         112,
         99
+      ]
+    },
+    {
+      "name": "grantCreated",
+      "discriminator": [
+        162,
+        254,
+        131,
+        56,
+        65,
+        214,
+        85,
+        6
       ]
     },
     {
@@ -3911,6 +4516,11 @@ export const IDL: Caprail = {
       "code": 6023,
       "name": "offerStale",
       "msg": "seller's account no longer backs this offer: delegation or balance is short"
+    },
+    {
+      "code": 6024,
+      "name": "invalidGrant",
+      "msg": "grant schedule needs start <= cliff <= end and start < end"
     }
   ],
   "types": [
@@ -4000,6 +4610,30 @@ export const IDL: Caprail = {
       }
     },
     {
+      "name": "createGrantArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "total",
+            "type": "u64"
+          },
+          {
+            "name": "startAt",
+            "type": "i64"
+          },
+          {
+            "name": "cliffAt",
+            "type": "i64"
+          },
+          {
+            "name": "endAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "createOfferArgs",
       "type": {
         "kind": "struct",
@@ -4051,6 +4685,86 @@ export const IDL: Caprail = {
                 "name": "transferPolicy"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "grant",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "total",
+            "type": "u64"
+          },
+          {
+            "name": "startAt",
+            "type": "i64"
+          },
+          {
+            "name": "cliffAt",
+            "type": "i64"
+          },
+          {
+            "name": "endAt",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "grantCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "grant",
+            "type": "pubkey"
+          },
+          {
+            "name": "company",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "total",
+            "type": "u64"
+          },
+          {
+            "name": "startAt",
+            "type": "i64"
+          },
+          {
+            "name": "cliffAt",
+            "type": "i64"
+          },
+          {
+            "name": "endAt",
+            "type": "i64"
+          },
+          {
+            "name": "createdAt",
+            "type": "i64"
           }
         ]
       }
