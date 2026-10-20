@@ -10,9 +10,9 @@
 //! **Хук не створює акаунтів.** Запис реєстру, якого немає, приходить порожнім
 //! системним акаунтом і читається за змістом: інвестор без запису — не допущений.
 //!
-//! Перевірки 3 (vesting, US3) і 4 (ROFR, US4) додаються сюди ж, у тому
-//! порядку, що в `PLAN.md`; акаунти під них (`grant`, `transfer_permit`) уже
-//! приїжджають — список акаунтів мінта незмінний.
+//! Check 4 (ROFR, US4) goes here too, after check 3, in the order of
+//! `PLAN.md`; its account (`transfer_permit`) already arrives — the mint's
+//! account list does not change.
 //!
 //! Стан тут чужий: усі акаунти нижче створює і змінює `caprail`, ця програма
 //! їх тільки читає (`Account<TokenConfig>` перевіряє власника `caprail::ID`).
@@ -27,7 +27,7 @@ use spl_discriminator::SplDiscriminate;
 use spl_transfer_hook_interface::instruction::ExecuteInstruction;
 
 use caprail::events::TransferAllowed;
-use caprail::state::{InvestorRecord, InvestorStatus, TokenConfig};
+use caprail::state::{Grant, InvestorRecord, InvestorStatus, TokenConfig};
 use caprail::CaprailError;
 
 /// Дискримінатор не Anchor-івський, а з інтерфейсу хука: Token-2022 кладе в
@@ -71,8 +71,9 @@ pub struct Execute<'info> {
     // обробник і з чужою причиною.
     /// CHECK: власник і дискримінатор перевіряються в обробнику
     pub investor_record: UncheckedAccount<'info>,
-    // 8. Грант відправника — перевірка 3 (US3). Поки не читається.
-    /// CHECK: до US3 не використовується
+    // 8. The sender's grant — check 3. Not `Account<…>` for the same reason
+    // as the record: a wallet without a grant is the usual case.
+    /// CHECK: owner and discriminator are checked in the handler
     pub grant: UncheckedAccount<'info>,
     // 9. Дозвіл ROFR — перевірка 4 (US4). Поки не читається.
     /// CHECK: до US4 не використовується
@@ -82,6 +83,7 @@ pub struct Execute<'info> {
 /// Те, що хук бере з токен-рахунку: чий він і чи справді зараз іде переказ.
 struct TransferSide {
     owner: Pubkey,
+    amount: u64,
     transferring: bool,
 }
 
@@ -97,6 +99,7 @@ fn read_side(info: &AccountInfo) -> Result<TransferSide> {
         .unwrap_or(false);
     Ok(TransferSide {
         owner: state.base.owner,
+        amount: state.base.amount,
         transferring,
     })
 }
@@ -110,6 +113,16 @@ fn read_investor_record(info: &AccountInfo) -> Result<Option<InvestorRecord>> {
     }
     let data = info.try_borrow_data()?;
     Ok(Some(InvestorRecord::try_deserialize(&mut &data[..])?))
+}
+
+// Same two states as the record: the token program already derived the address
+// from the source account's owner, so an account we own there is that grant.
+fn read_grant(info: &AccountInfo) -> Result<Option<Grant>> {
+    if info.owner != &caprail::ID {
+        return Ok(None);
+    }
+    let data = info.try_borrow_data()?;
+    Ok(Some(Grant::try_deserialize(&mut &data[..])?))
 }
 
 pub fn execute_handler(ctx: Context<Execute>, amount: u64) -> Result<()> {
@@ -140,6 +153,17 @@ pub fn execute_handler(ctx: Context<Execute>, amount: u64) -> Result<()> {
         // Строга нерівність: допуск до кінця дня діє до кінця дня, не довше.
         let now = Clock::get()?.unix_timestamp;
         require!(record.expires_at > now, CaprailError::AccreditationExpired);
+    }
+
+    // Check 3: the unvested part of the grant stays on the account. The hook
+    // runs after the debit, so `source.amount` is already the balance left;
+    // tokens bought on top of the grant are outside `total` and move freely.
+    if let Some(grant) = read_grant(&ctx.accounts.grant)? {
+        let now = Clock::get()?.unix_timestamp;
+        // `create_grant` refuses a schedule without a vesting curve; should one
+        // reach here anyway, it vests nothing — the lock errs on the safe side.
+        let locked = grant.total - grant.vested(now).unwrap_or(0);
+        require!(source.amount >= locked, CaprailError::Unvested);
     }
 
     // Єдине джерело журналу успішних переказів (FR-008): і `distribute`, і
