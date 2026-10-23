@@ -126,3 +126,4 @@ export {
   type RejectionReason,
   rejectionReasonSchema,
 } from './reasons.ts'
+export { vested } from './vesting.ts'
